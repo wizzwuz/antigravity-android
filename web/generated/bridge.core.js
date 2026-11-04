@@ -398,6 +398,15 @@ try {
       post: dispatchNativeNotification,
       cancel: cancelNativeNotification
     };
+    if (typeof window.__agyOpenConversation !== 'function') {
+      window.__agyOpenConversation = function(cid) {
+        if (typeof window.__agySwitchConvo === 'function') {
+          try { window.__agySwitchConvo(cid); return; } catch (_) {}
+        }
+        window.__agyPendingCascadeId = cid;
+        try { window.location.hash = '#/cascade/' + cid; } catch (_) {}
+      };
+    }
   }
 } catch (e) {
   console.warn('[AGY Notification] polyfill error:', e);

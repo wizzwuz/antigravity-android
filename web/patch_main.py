@@ -246,17 +246,38 @@ def patch_main_screen_universal_search(content):
         content = content.replace(cs_flag, 'conversationSearchV2:{feature:!0', 1)
         print("[web-patch] Enabled conversationSearchV2 feature flag in main.js")
 
-    if "main-search-button" in content and "mainCmd" in content:
-        print("[web-patch] Main screen universal search button already present in main.js")
-        return content, True
+    # 2. Patch PBb to ensure unified search is always enabled when conversationSearchV2 is active
+    pbb_target = 'f=!(!e.get("codeSearchPalette")?.enabled||c===void 0),g=!(!f||!e.get("conversationSearchV2"))'
+    pbb_injected = 'f=!(!e.get("codeSearchPalette")?.enabled||c===void 0),g=!0'
+    if pbb_target in content:
+        content = content.replace(pbb_target, pbb_injected, 1)
+        print("[web-patch] Enabled showUnifiedSearch in PBb component")
 
-    # 2. Inject mainCmd into fRb header
+    # 3. Inject mainCmd and window.__agyOpenConversation into fRb header
     frb_target = 'function fRb(){var a=Lj(),b=ER(),'
-    frb_injected = 'function fRb(){var mainCmd=typeof eA==="function"?eA():null,a=Lj(),b=ER(),'
+    frb_injected = (
+        'function fRb(){'
+        'var mainCmd=typeof eA==="function"?eA():null,switchConvo=typeof Nsb==="function"?Nsb():null;'
+        'if(typeof window!=="undefined"){'
+        'window.__agyOpenConversation=function(cid){'
+        'try{if(switchConvo){switchConvo(cid);return}}catch(_){}'
+        'try{window.location.hash="#/cascade/"+cid}catch(_){}'
+        '};'
+        'if(window.__agyPendingCascadeId){'
+        'var pCid=window.__agyPendingCascadeId;delete window.__agyPendingCascadeId;'
+        'setTimeout(function(){window.__agyOpenConversation(pCid)},150);'
+        '}'
+        '}'
+        'var a=Lj(),b=ER(),'
+    )
     if frb_target in content:
         content = content.replace(frb_target, frb_injected, 1)
 
-    # 3. Locate mobile-open-settings in fRb
+    if "main-search-button" in content:
+        print("[web-patch] Main screen universal search button already present in main.js")
+        return content, True
+
+    # 4. Locate mobile-open-settings in fRb
     idx = content.find("mobile-open-settings")
     if idx == -1:
         print("[web-patch] mobile-open-settings target not found in main.js", file=sys.stderr)
@@ -281,7 +302,10 @@ def patch_main_screen_universal_search(content):
 
     search_btn = (
         f'{b_var}&&{react_id}.createElement({btn_comp},{{iconName:"search",'
-        'onClick:()=>{try{if(mainCmd&&typeof mainCmd.executeCommand==="function"){mainCmd.executeCommand("openConvoPicker");return}}catch(_){}'
+        'onClick:()=>{'
+        'try{if(mainCmd&&typeof mainCmd.executeCommand==="function"){mainCmd.executeCommand("openConvoPickerV2");return}}catch(_){}'
+        'try{if(mainCmd&&typeof mainCmd.executeCommand==="function"){mainCmd.executeCommand("openConvoPicker");return}}catch(_){}'
+        'try{window.dispatchEvent(new KeyboardEvent("keydown",{key:"k",code:"KeyK",keyCode:75,which:75,ctrlKey:!0,altKey:!0,bubbles:!0,cancelable:!0}))}catch(_){}'
         'try{window.dispatchEvent(new KeyboardEvent("keydown",{key:"k",code:"KeyK",keyCode:75,which:75,ctrlKey:!0,metaKey:!0,bubbles:!0,cancelable:!0}))}catch(_){}},'
         '"aria-label":"Search all projects",title:"Search all projects",dataTestId:"main-search-button"}),'
     )
@@ -293,34 +317,101 @@ def patch_main_screen_universal_search(content):
 
 
 def patch_agent_notifications(content):
-    if "agent_completed_open_chat" in content:
+    if "cascade_prog_" in content:
         print("[web-patch] Agent notifications already patched in main.js")
         return content, True
 
-    # 1. Patch WebNotificationService.sendNotification
-    sn_target = 'async sendNotification(a){var b=d,c=d;try{'
-    sn_injected = (
-        'async sendNotification(a){'
-        'try{if(typeof window!=="undefined"&&window.Android&&typeof window.Android.postNotification==="function"){'
-        'var isChatOpen=typeof document!=="undefined"&&document.hasFocus&&document.hasFocus();'
-        'var ch=isChatOpen?"agent_completed_open_chat":"agent_completed";'
-        'window.Android.postNotification(ch,a.title||"Antigravity",a.body||"",a.payload?.cascadeId||"",!1,-1);'
-        '}}catch(_){}'
-        'var b=d,c=d;try{'
-    )
-    if sn_target in content:
-        content = content.replace(sn_target, sn_injected, 1)
-
-    # 2. Patch HDa for silent agent progress notifications
+    # 1. Patch HDa for live real-time progress and completion tracking per conversation
     hda_target = 'h.notFullyIdle?a.add(b):a.delete(b)&&(h.trajectoryMetadata?.parentConversationId||e.push([b,h]))'
     hda_injected = (
-        'h.notFullyIdle?(a.add(b),typeof window!=="undefined"&&window.Android?.postNotification&&window.Android.postNotification("agent_progress","Agent progress","Silent progress for Antigravity tasks",b,!0,-1)):'
-        '(a.delete(b)&&(typeof window!=="undefined"&&window.Android?.cancelNotification&&window.Android.cancelNotification("agent_progress",1002),(h.trajectoryMetadata?.parentConversationId||e.push([b,h]))))'
+        'h.notFullyIdle?('
+        'a.add(b),'
+        '(function(){try{if(typeof window!=="undefined"&&window.Android&&typeof window.Android.postNotification==="function"){'
+        'var t=h.summary||h.title||"Agent running";'
+        'var st=h.stepCount?("Step "+h.stepCount+": "):"";'
+        'var bd=st+(h.preview||"Working on task...");'
+        'var pr=h.stepCount?Math.min(95,h.stepCount*5):-1;'
+        'window.Android.postNotification("agent_progress",t,bd,b,true,pr);'
+        '}}catch(_){}})()'
+        '):('
+        'a.delete(b)&&('
+        '(function(){try{if(typeof window!=="undefined"&&window.Android){'
+        'window.Android.cancelNotification("cascade_prog_"+b,0);'
+        'var ct=h.summary||h.title||"Agent completed";'
+        'var cb=h.preview||"Agent finished the task";'
+        'window.Android.postNotification("agent_completed",ct,cb,b,false,-1);'
+        '}}catch(_){}})(),'
+        '(h.trajectoryMetadata?.parentConversationId||e.push([b,h]))'
+        ')'
+        ')'
     )
     if hda_target in content:
         content = content.replace(hda_target, hda_injected, 1)
+        print("[web-patch] Patched HDa stream listener with multi-conversation progress and completion notifications")
 
-    print("[web-patch] Successfully patched Agent notifications (open chat, completed, progress) into main.js")
+    # 2. Patch KDa for required actions (permissions, questions)
+    kda_act_target = 'r&&(f.actionRequired&&g?.({soundFile:f.actionRequired}),c?.(r))'
+    kda_act_injected = (
+        'r&&('
+        '(function(){try{if(typeof window!=="undefined"&&window.Android&&typeof window.Android.postNotification==="function"){'
+        'window.Android.postNotification("agent_completed",r.title||"Action requires attention",r.body||"The agent needs your input.",r.payload?.cascadeId||"",false,-1);'
+        '}}catch(_){}})(),'
+        'f.actionRequired&&g?.({soundFile:f.actionRequired}),c?.(r)'
+        ')'
+    )
+    if kda_act_target in content:
+        content = content.replace(kda_act_target, kda_act_injected, 1)
+        print("[web-patch] Patched KDa with agent action/question notification")
+
+    # 3. Patch KDa for cascadeDone completion dispatch
+    kda_fin_target = 'c?.({id:`agent-finished-${l}-${Date.now()}`,title:e,body:q.summary||"Agent finished",payload:{cascadeId:l,type:"request_action",workspaceUri:void 0}})'
+    kda_fin_injected = (
+        '('
+        '(function(){try{if(typeof window!=="undefined"&&window.Android&&typeof window.Android.postNotification==="function"){'
+        'window.Android.cancelNotification("cascade_prog_"+l,0);'
+        'window.Android.postNotification("agent_completed",q.summary||"Agent completed",q.preview||"Agent finished task",l,false,-1);'
+        '}}catch(_){}})(),'
+        'c?.({id:`agent-finished-${l}-${Date.now()}`,title:e,body:q.summary||"Agent finished",payload:{cascadeId:l,type:"request_action",workspaceUri:void 0}})'
+        ')'
+    )
+    if kda_fin_target in content:
+        content = content.replace(kda_fin_target, kda_fin_injected, 1)
+        print("[web-patch] Patched KDa completion dispatcher with agent_completed notification")
+
+    return content, True
+
+
+def patch_full_text_conversation_search(content):
+    if "natStr=window.Android.searchConversations" in content:
+        print("[web-patch] Full text conversation search already present in main.js")
+        return content, True
+
+    # Patch cBb to query native full-text transcript search from Android bridge
+    cbb_target = 'let J=H(await G(c({query:b,limit:50,signal:D.signal})));'
+    cbb_injected = (
+        'let J;'
+        'if(typeof window!=="undefined"&&window.Android&&typeof window.Android.searchConversations==="function"){'
+        'try{'
+        'var natStr=window.Android.searchConversations(b,50);'
+        'if(natStr){'
+        'var natJson=JSON.parse(natStr);'
+        'if(natJson&&Array.isArray(natJson.results)&&natJson.results.length>0){'
+        'J=natJson;'
+        '}'
+        '}'
+        '}catch(natErr){console.warn("[AGY Search] native search error:",natErr);}'
+        '}'
+        'if(!J){'
+        'J=H(await G(c({query:b,limit:50,signal:D.signal})));'
+        '}'
+    )
+    if cbb_target in content:
+        content = content.replace(cbb_target, cbb_injected, 1)
+        print("[web-patch] Successfully patched cBb with native full-text conversation search")
+    else:
+        print("[web-patch] cBb target not found in main.js", file=sys.stderr)
+        return content, False
+
     return content, True
 
 
@@ -354,6 +445,10 @@ def patch_main(file_path):
 
     content, ok_notif = patch_agent_notifications(content)
     if not ok_notif:
+        return False
+
+    content, ok_fts = patch_full_text_conversation_search(content)
+    if not ok_fts:
         return False
 
     with open(file_path, "w", encoding="utf-8") as f:

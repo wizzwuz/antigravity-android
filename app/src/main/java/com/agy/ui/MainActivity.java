@@ -73,6 +73,7 @@ public class MainActivity extends Activity
     private boolean activityResumed = false;
     private int loadedGeneration = -1;
     private long splashDeadline;
+    private String pendingCascadeId = null;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -133,6 +134,12 @@ public class MainActivity extends Activity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         activeActivity = this;
+
+        Intent startIntent = getIntent();
+        if (startIntent != null && startIntent.hasExtra("cascade_id")) {
+            pendingCascadeId = startIntent.getStringExtra("cascade_id");
+        }
+
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
 
@@ -214,6 +221,36 @@ public class MainActivity extends Activity
     public void dismissSplash() {
         Log.i(TAG, "dismissSplash: fading out splashView (280ms)");
         splash.dismiss();
+        if (pendingCascadeId != null) {
+            final String cid = pendingCascadeId;
+            pendingCascadeId = null;
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    openConversationInWebView(cid);
+                }
+            }, 300);
+        }
+    }
+
+    public void openConversationInWebView(final String cascadeId) {
+        if (cascadeId == null || cascadeId.isEmpty()) return;
+        if (webViewHost != null && webViewHost.getWebView() != null) {
+            webViewHost.getWebView().post(new Runnable() {
+                @Override
+                public void run() {
+                    String jsArg = org.json.JSONObject.quote(cascadeId);
+                    webViewHost.getWebView().evaluateJavascript(
+                            "(function() {" +
+                            "  if (typeof window.__agyOpenConversation === 'function') {" +
+                            "    window.__agyOpenConversation(" + jsArg + ");" +
+                            "  } else {" +
+                            "    window.__agyPendingCascadeId = " + jsArg + ";" +
+                            "  }" +
+                            "})();", null);
+                }
+            });
+        }
     }
 
     public boolean isDesktopMode() {
@@ -268,6 +305,13 @@ public class MainActivity extends Activity
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        if (intent != null && intent.hasExtra("cascade_id")) {
+            final String cid = intent.getStringExtra("cascade_id");
+            if (cid != null && !cid.isEmpty()) {
+                pendingCascadeId = cid;
+                openConversationInWebView(cid);
+            }
+        }
     }
 
     @Override

@@ -64,6 +64,7 @@ public final class NotificationHandler {
             completed.setDescription("Agent finished or needs attention");
             completed.enableLights(true);
             completed.enableVibration(true);
+            completed.setVibrationPattern(new long[]{0, 250, 100, 250});
             completed.setShowBadge(true);
             completed.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             manager.createNotificationChannel(completed);
@@ -108,6 +109,27 @@ public final class NotificationHandler {
             channel = CHANNEL_AGENT_COMPLETED;
         }
 
+        // Determine stable per-conversation tag & ID for multi-conversation support
+        String actualTag;
+        int actualId;
+        if (cascadeId != null && !cascadeId.isEmpty()) {
+            int hashOffset = Math.abs(cascadeId.hashCode() % 50000);
+            if (CHANNEL_AGENT_PROGRESS.equals(channel)) {
+                actualTag = "cascade_prog_" + cascadeId;
+                actualId = 10000 + hashOffset;
+            } else {
+                actualTag = "cascade_done_" + cascadeId;
+                actualId = 60000 + hashOffset;
+                // Automatically dismiss any active progress notification for this conversation
+                try {
+                    manager.cancel("cascade_prog_" + cascadeId, 10000 + hashOffset);
+                } catch (Throwable ignored) {}
+            }
+        } else {
+            actualTag = tag != null && !tag.isEmpty() ? tag : "agy_notification";
+            actualId = id > 0 ? id : (ongoing ? 1001 : 1002);
+        }
+
         int icon = context.getResources().getIdentifier("ic_notification", "drawable", context.getPackageName());
         if (icon == 0) {
             icon = android.R.drawable.ic_dialog_info;
@@ -130,10 +152,9 @@ public final class NotificationHandler {
             builder.setProgress(0, 0, true);
         }
 
-        // Action Intent to bring app to foreground and navigate
+        // Action Intent to bring app to foreground and navigate directly to conversation
         Intent intent = new Intent(context, com.agy.ui.MainActivity.class);
-        intent.setAction(Intent.ACTION_MAIN);
-        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+        intent.setAction("com.agy.action.OPEN_CONVERSATION");
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         if (cascadeId != null && !cascadeId.isEmpty()) {
             intent.putExtra("cascade_id", cascadeId);
@@ -143,15 +164,16 @@ public final class NotificationHandler {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
         }
-        PendingIntent pi = PendingIntent.getActivity(context, id, intent, pendingFlags);
+        PendingIntent pi = PendingIntent.getActivity(context, actualId, intent, pendingFlags);
         builder.setContentIntent(pi);
 
         // Configure floating notification support / priority
         if (CHANNEL_AGENT_COMPLETED.equals(channel)) {
-            builder.setPriority(Notification.PRIORITY_HIGH);
+            builder.setPriority(Notification.PRIORITY_MAX);
             builder.setDefaults(Notification.DEFAULT_ALL);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 builder.setCategory(Notification.CATEGORY_EVENT);
+                builder.setVibrate(new long[]{0, 250, 100, 250});
             }
         } else if (CHANNEL_AGENT_PROGRESS.equals(channel)) {
             builder.setPriority(Notification.PRIORITY_LOW);
@@ -166,13 +188,21 @@ public final class NotificationHandler {
             }
         }
 
-        manager.notify(tag != null ? tag : "agy_notification", id, builder.build());
+        manager.notify(actualTag, actualId, builder.build());
     }
 
     public static void cancel(Context context, String tag, int id) {
         if (context == null) return;
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager != null) {
+        if (manager == null) return;
+
+        if (tag != null && tag.startsWith("cascade_")) {
+            // Cancel by explicit tag and computed ID if id is 0
+            int cancelId = id > 0 ? id : 10000 + Math.abs(tag.hashCode() % 50000);
+            manager.cancel(tag, cancelId);
+            // Also try canceling with 0 or fallback ID
+            manager.cancel(tag, 0);
+        } else {
             manager.cancel(tag != null ? tag : "agy_notification", id);
         }
     }

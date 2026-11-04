@@ -8,6 +8,16 @@ import com.agy.shell.ShizukuBridge;
 import com.agy.theme.ThemeManager;
 import com.agy.ui.MainActivity;
 
+import android.util.Log;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import java.lang.ref.WeakReference;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
@@ -103,9 +113,7 @@ public final class AndroidBridge {
         final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
         Context ctx = act != null ? act.getApplicationContext() : null;
         if (ctx != null) {
-            int id = (int) (System.currentTimeMillis() % 100000);
-            String tag = "agy_" + (cascadeId != null && !cascadeId.isEmpty() ? cascadeId : "notif");
-            com.agy.gateway.handlers.NotificationHandler.post(ctx, channel, title, message, cascadeId, ongoing, progress, id, tag);
+            com.agy.gateway.handlers.NotificationHandler.post(ctx, channel, title, message, cascadeId, ongoing, progress, 0, null);
         }
     }
 
@@ -116,6 +124,144 @@ public final class AndroidBridge {
         if (ctx != null) {
             com.agy.gateway.handlers.NotificationHandler.cancel(ctx, tag, id);
         }
+    }
+
+    @JavascriptInterface
+    public String searchConversations(String query, int limit) {
+        if (query == null || query.trim().isEmpty()) {
+            return "{\"results\":[]}";
+        }
+        final String qLower = query.trim().toLowerCase();
+        final int maxResults = limit > 0 ? Math.min(limit, 100) : 50;
+
+        JSONArray results = new JSONArray();
+        try {
+            final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
+            Context ctx = act != null ? act.getApplicationContext() : null;
+            File baseDir = ctx != null ? ctx.getFilesDir() : new File("/data/user/0/com.agy/files");
+            File geminiDir = new File(baseDir, ".gemini/antigravity-app");
+            if (!geminiDir.exists()) {
+                geminiDir = new File("/data/user/0/com.krmobdev.antigravity/files/.gemini/antigravity-app");
+            }
+
+            Map<String, String> titles = new HashMap<>();
+            File dbFile = new File(geminiDir, "conversation_summaries.db");
+            if (dbFile.exists()) {
+                android.database.sqlite.SQLiteDatabase db = null;
+                android.database.Cursor cursor = null;
+                try {
+                    db = android.database.sqlite.SQLiteDatabase.openDatabase(
+                            dbFile.getAbsolutePath(), null, android.database.sqlite.SQLiteDatabase.OPEN_READONLY);
+                    cursor = db.rawQuery("SELECT conversation_id, title FROM conversation_summaries", null);
+                    if (cursor != null && cursor.moveToFirst()) {
+                        do {
+                            String cid = cursor.getString(0);
+                            String title = cursor.getString(1);
+                            if (cid != null) {
+                                titles.put(cid, title != null ? title : "Untitled Conversation");
+                            }
+                        } while (cursor.moveToNext());
+                    }
+                } catch (Throwable t) {
+                    Log.w("AndroidBridge", "searchConversations db read error: " + t.getMessage());
+                } finally {
+                    if (cursor != null) {
+                        try { cursor.close(); } catch (Throwable ignored) {}
+                    }
+                    if (db != null) {
+                        try { db.close(); } catch (Throwable ignored) {}
+                    }
+                }
+            }
+
+            File brainDir = new File(geminiDir, "brain");
+            if (brainDir.exists() && brainDir.isDirectory()) {
+                File[] convoDirs = brainDir.listFiles();
+                if (convoDirs != null) {
+                    for (File dir : convoDirs) {
+                        if (results.length() >= maxResults) break;
+                        if (!dir.isDirectory()) continue;
+                        String cid = dir.getName();
+                        File transcript = new File(dir, ".system_generated/logs/transcript.jsonl");
+                        if (!transcript.exists() || !transcript.isFile()) continue;
+
+                        String title = titles.containsKey(cid) ? titles.get(cid) : "Untitled Conversation";
+
+                        JSONArray titleMatchRanges = new JSONArray();
+                        int tIdx = title.toLowerCase().indexOf(qLower);
+                        if (tIdx >= 0) {
+                            JSONObject tm = new JSONObject();
+                            tm.put("startOffset", tIdx);
+                            tm.put("endOffsetExclusive", tIdx + qLower.length());
+                            titleMatchRanges.put(tm);
+                        }
+
+                        BufferedReader br = null;
+                        try {
+                            br = new BufferedReader(new InputStreamReader(
+                                    new FileInputStream(transcript), StandardCharsets.UTF_8));
+                            String line;
+                            while ((line = br.readLine()) != null) {
+                                if (line.toLowerCase().contains(qLower)) {
+                                    String content = "";
+                                    try {
+                                        JSONObject json = new JSONObject(line);
+                                        content = json.optString("content", "");
+                                        if (content.isEmpty() && json.has("tool_calls")) {
+                                            content = json.opt("tool_calls").toString();
+                                        }
+                                    } catch (Throwable ignored) {
+                                        content = line;
+                                    }
+
+                                    int idx = content.toLowerCase().indexOf(qLower);
+                                    if (idx >= 0) {
+                                        int startPos = Math.max(0, idx - 40);
+                                        int endPos = Math.min(content.length(), idx + qLower.length() + 60);
+                                        String prefix = startPos > 0 ? "... " : "";
+                                        String suffix = endPos < content.length() ? " ..." : "";
+                                        String rawSnippet = content.substring(startPos, endPos).replace('\n', ' ').replace('\r', ' ');
+                                        String snippet = prefix + rawSnippet + suffix;
+
+                                        int matchStart = prefix.length() + (idx - startPos);
+                                        int matchEnd = matchStart + qLower.length();
+
+                                        JSONArray snippetRanges = new JSONArray();
+                                        JSONObject sr = new JSONObject();
+                                        sr.put("startOffset", matchStart);
+                                        sr.put("endOffsetExclusive", matchEnd);
+                                        snippetRanges.put(sr);
+
+                                        JSONObject item = new JSONObject();
+                                        item.put("cascadeId", cid);
+                                        item.put("title", title);
+                                        item.put("snippet", snippet);
+                                        item.put("snippetMatchRanges", snippetRanges);
+                                        item.put("titleMatchRanges", titleMatchRanges);
+                                        results.put(item);
+                                        break;
+                                    }
+                                }
+                            }
+                        } catch (Throwable t) {
+                            Log.w("AndroidBridge", "Error reading transcript " + transcript.getPath() + ": " + t.getMessage());
+                        } finally {
+                            if (br != null) {
+                                try { br.close(); } catch (Throwable ignored) {}
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            Log.w("AndroidBridge", "searchConversations error: " + t.getMessage());
+        }
+
+        JSONObject resp = new JSONObject();
+        try {
+            resp.put("results", results);
+        } catch (Throwable ignored) {}
+        return resp.toString();
     }
 
     // Native-only helpers used while preparing the trusted app document.
