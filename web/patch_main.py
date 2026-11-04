@@ -170,6 +170,76 @@ def patch_conversation_search(content):
     return content, True
 
 
+def patch_include_user_inputs_in_search(content):
+    if 'c.getAttribute("data-testid")==="user-input-step"' in content:
+        print("[web-patch] User inputs already included in search in main.js")
+        return content, True
+
+    # 1. Update sC so text in user-input-step or with data-quotable is not rejected by select-none
+    sc_pattern = re.compile(
+        r'(if\(c\.hasAttribute\("data-find-ignore"\)\)return!0;)(if\(![A-Za-z0-9_$]+&&\([A-Za-z0-9_$]+\.classList\.contains\("select-text"\))'
+    )
+    sc_match = sc_pattern.search(content)
+    if not sc_match:
+        print("[web-patch] sC pattern not matched for user input search inclusion", file=sys.stderr)
+        return content, False
+
+    sc_injected = (
+        sc_match.group(1)
+        + 'if(c.hasAttribute("data-quotable")||c.getAttribute("data-testid")==="user-input-step"||c.getAttribute("aria-label")==="User message")e=!0;'
+        + sc_match.group(2)
+    )
+    content = content[:sc_match.start()] + sc_injected + content[sc_match.end():]
+
+    # 2. Add select-text to bwb to ensure quotable and searchable text
+    bwb_target = 'className:"whitespace-pre-wrap text-sm"'
+    if bwb_target in content:
+        content = content.replace(bwb_target, 'className:"whitespace-pre-wrap text-sm select-text"', 1)
+
+    print("[web-patch] Successfully patched user input messages into in-conversation search in main.js")
+    return content, True
+
+
+def patch_main_screen_universal_search(content):
+    if "main-search-button" in content:
+        print("[web-patch] Main screen universal search button already present in main.js")
+        return content, True
+
+    # Locate mobile-open-settings in fRb
+    idx = content.find("mobile-open-settings")
+    if idx == -1:
+        print("[web-patch] mobile-open-settings target not found in main.js", file=sys.stderr)
+        return content, False
+
+    window_start = max(0, idx - 150)
+    window_end = min(len(content), idx + 80)
+    window_text = content[window_start:window_end]
+
+    pattern = re.compile(
+        r'([A-Za-z0-9_$]+)&&([A-Za-z0-9_$]+)&&([A-Za-z0-9_$]+)\.createElement\(([A-Za-z0-9_$]+),\{iconName:"settings",.*?dataTestId:"mobile-open-settings"\}\)'
+    )
+    m = pattern.search(window_text)
+    if not m:
+        print("[web-patch] mobile-open-settings element pattern not matched in fRb", file=sys.stderr)
+        return content, False
+
+    orig_elem = m.group(0)
+    b_var = m.group(1)      # isHome variable
+    react_id = m.group(3)   # React identifier
+    btn_comp = m.group(4)   # IconButton component
+
+    search_btn = (
+        f'{b_var}&&{react_id}.createElement({btn_comp},{{iconName:"search",'
+        'onClick:()=>{try{var cmd=typeof eA==="function"?eA():null;if(cmd&&typeof cmd.executeCommand==="function"){cmd.executeCommand("openConvoPicker");return}}catch(_){}try{document.querySelector(\'[data-testid="sidebar-search-button"]\')?.click()}catch(_){}},'
+        '"aria-label":"Search all projects",title:"Search all projects",dataTestId:"main-search-button"}),'
+    )
+    injected_elem = search_btn + orig_elem
+    content = content.replace(orig_elem, injected_elem, 1)
+
+    print("[web-patch] Successfully patched main screen universal search button into main.js")
+    return content, True
+
+
 def patch_main(file_path):
     if not os.path.isfile(file_path):
         print(f"[web-patch] file not found: {file_path}", file=sys.stderr)
@@ -184,6 +254,14 @@ def patch_main(file_path):
 
     content, ok_search = patch_conversation_search(content)
     if not ok_search:
+        return False
+
+    content, ok_inputs = patch_include_user_inputs_in_search(content)
+    if not ok_inputs:
+        return False
+
+    content, ok_universal = patch_main_screen_universal_search(content)
+    if not ok_universal:
         return False
 
     with open(file_path, "w", encoding="utf-8") as f:
