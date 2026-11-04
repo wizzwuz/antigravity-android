@@ -124,7 +124,7 @@ web/
 
 Скрипт [`patch_main.py`](patch_main.py) выполняет динамическую модификацию скомпилированного и обфусцированного бандла `main.js`:
 
-1. **Идемпотентность**: Перед патчингом проверяется наличие маркеров `"Desktop Mode"` или `"ag_desktop_mode"`. Если они присутствуют, повторное применение пропускается.
+1. **Идемпотентность**: Перед патчингом проверяется наличие маркеров `"Desktop Mode"`, `"ag_desktop_mode"`, `"conversation-search-button"` и `"onSearchClick"`.
 2. **Внедрение Desktop Mode Toggle**:
    - Находится сигнатура хуков компонента Appearance:
      ```python
@@ -132,7 +132,11 @@ web/
      ```
    - Внедряются React-хуки `useState` и `useCallback`, связывающие состояние с `window.Android.isDesktopMode()` и `localStorage.getItem('ag_desktop_mode')`.
    - Находится вызов `createElement` для секции `{label:"Theme"}` и сразу за ним инжектируется элемент настройки Desktop Mode с переключателем (`Switch`).
-3. **Монохроматизация логотипа Eza**:
+3. **Кнопка поиска по диалогу (Conversation Search Button)**:
+   - В компонент действий шапки проекта (`k4`) внедряется кнопка поиска (`HeaderButtonIcon` с иконкой `search` и `dataTestId: "conversation-search-button"`), располагающаяся непосредственно слева от трёхточечного меню (`titlebar-more-actions`).
+   - Кнопка поддерживает поиск по всему тексту диалога, активируя панель `findInConversation` через Redux-слайс `findInPane` (`setIsFindBarVisible`, `triggerFindFocus`), вызов команды ядра `CommandsService.executeCommand("conversationView.findInConversation")` и эмуляцию клавиатурного сочетания `Ctrl+F`.
+   - При повторном клике во время активного фокуса на строке поиска происходит плавное сворачивание панели.
+4. **Монохроматизация логотипа Eza**:
    - Upstream-логотип Antigravity содержит жестко зашитый многоцветный SVG (`mask0_6153_71`).
    - Патчер заменяет тело компонента `var Eza=...` на монохромный плоский SVG, использующий CSS-токены `text-[#9AA0A6]` (тёмная тема) и `text-[#5F6368]` (светлая тема).
 
