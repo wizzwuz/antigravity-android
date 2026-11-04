@@ -200,12 +200,63 @@ def patch_include_user_inputs_in_search(content):
     return content, True
 
 
+def patch_search_toggles(content):
+    target = 'var e_b=()=>{var {options:a,setOptions:b}=EP()'
+    idx = content.find(target)
+    if idx == -1:
+        if "tBtn" in content and "Match Case (Aa)" in content:
+            print("[web-patch] Search toggles already enhanced in main.js")
+            return content, True
+        print("[web-patch] e_b target not found in main.js", file=sys.stderr)
+        return content, False
+
+    end_idx = content.find('};', idx)
+    if end_idx == -1:
+        print("[web-patch] end of e_b not found in main.js", file=sys.stderr)
+        return content, False
+
+    orig_eb = content[idx:end_idx + 2]
+
+    injected_eb = (
+        'var e_b=()=>{var {options:a,setOptions:b}=EP(),c=PC(),e=PC(),f=PC(),g=(0,A.useCallback)(h=>{b(h)},[b]);'
+        'var tBtn=(active,onClick,iconName,label,id)=>A.createElement("div",{"data-tooltip-id":id,className:"flex items-center"},'
+        'A.createElement("button",{type:"button",'
+        'onPointerDown:h=>{h.preventDefault();h.stopPropagation()},'
+        'onClick:h=>{h.preventDefault();h.stopPropagation();onClick()},'
+        '"aria-label":label,"aria-pressed":active,'
+        'className:aj("px-1.5 py-0.5 min-w-[24px] min-h-[22px] flex items-center justify-center rounded transition-all outline-none text-xs",'
+        'active?"bg-primary text-primary-foreground font-bold shadow-xs":"text-muted-foreground hover:text-foreground hover:bg-muted/80")},'
+        'A.createElement(W,{name:iconName,size:14})),'
+        'A.createElement(ty,{id:id,place:"bottom-end"},label));'
+        'return A.createElement("div",{className:"flex items-center gap-1 pr-1 ml-1 pl-1"},'
+        'tBtn(a.caseSensitive,()=>g({caseSensitive:!a.caseSensitive}),"match_case","Match Case (Aa)",c),'
+        'tBtn(a.wholeWord,()=>g({wholeWord:!a.wholeWord}),"match_word","Match Whole Word (ab)",e),'
+        'tBtn(a.useRegex,()=>g({useRegex:!a.useRegex}),"regular_expression","Use Regular Expression (.*)",f))};'
+    )
+
+    content = content.replace(orig_eb, injected_eb, 1)
+    print("[web-patch] Successfully patched Search Bar toggles with touch handling and active styling into main.js")
+    return content, True
+
+
 def patch_main_screen_universal_search(content):
-    if "main-search-button" in content:
+    # 1. Enable conversationSearchV2 feature flag in config
+    cs_flag = 'conversationSearchV2:{feature:!1'
+    if cs_flag in content:
+        content = content.replace(cs_flag, 'conversationSearchV2:{feature:!0', 1)
+        print("[web-patch] Enabled conversationSearchV2 feature flag in main.js")
+
+    if "main-search-button" in content and "mainCmd" in content:
         print("[web-patch] Main screen universal search button already present in main.js")
         return content, True
 
-    # Locate mobile-open-settings in fRb
+    # 2. Inject mainCmd into fRb header
+    frb_target = 'function fRb(){var a=Lj(),b=ER(),'
+    frb_injected = 'function fRb(){var mainCmd=typeof eA==="function"?eA():null,a=Lj(),b=ER(),'
+    if frb_target in content:
+        content = content.replace(frb_target, frb_injected, 1)
+
+    # 3. Locate mobile-open-settings in fRb
     idx = content.find("mobile-open-settings")
     if idx == -1:
         print("[web-patch] mobile-open-settings target not found in main.js", file=sys.stderr)
@@ -230,13 +281,46 @@ def patch_main_screen_universal_search(content):
 
     search_btn = (
         f'{b_var}&&{react_id}.createElement({btn_comp},{{iconName:"search",'
-        'onClick:()=>{try{var cmd=typeof eA==="function"?eA():null;if(cmd&&typeof cmd.executeCommand==="function"){cmd.executeCommand("openConvoPicker");return}}catch(_){}try{document.querySelector(\'[data-testid="sidebar-search-button"]\')?.click()}catch(_){}},'
+        'onClick:()=>{try{if(mainCmd&&typeof mainCmd.executeCommand==="function"){mainCmd.executeCommand("openConvoPicker");return}}catch(_){}'
+        'try{window.dispatchEvent(new KeyboardEvent("keydown",{key:"k",code:"KeyK",keyCode:75,which:75,ctrlKey:!0,metaKey:!0,bubbles:!0,cancelable:!0}))}catch(_){}},'
         '"aria-label":"Search all projects",title:"Search all projects",dataTestId:"main-search-button"}),'
     )
     injected_elem = search_btn + orig_elem
     content = content.replace(orig_elem, injected_elem, 1)
 
     print("[web-patch] Successfully patched main screen universal search button into main.js")
+    return content, True
+
+
+def patch_agent_notifications(content):
+    if "agent_completed_open_chat" in content:
+        print("[web-patch] Agent notifications already patched in main.js")
+        return content, True
+
+    # 1. Patch WebNotificationService.sendNotification
+    sn_target = 'async sendNotification(a){var b=d,c=d;try{'
+    sn_injected = (
+        'async sendNotification(a){'
+        'try{if(typeof window!=="undefined"&&window.Android&&typeof window.Android.postNotification==="function"){'
+        'var isChatOpen=typeof document!=="undefined"&&document.hasFocus&&document.hasFocus();'
+        'var ch=isChatOpen?"agent_completed_open_chat":"agent_completed";'
+        'window.Android.postNotification(ch,a.title||"Antigravity",a.body||"",a.payload?.cascadeId||"",!1,-1);'
+        '}}catch(_){}'
+        'var b=d,c=d;try{'
+    )
+    if sn_target in content:
+        content = content.replace(sn_target, sn_injected, 1)
+
+    # 2. Patch HDa for silent agent progress notifications
+    hda_target = 'h.notFullyIdle?a.add(b):a.delete(b)&&(h.trajectoryMetadata?.parentConversationId||e.push([b,h]))'
+    hda_injected = (
+        'h.notFullyIdle?(a.add(b),typeof window!=="undefined"&&window.Android?.postNotification&&window.Android.postNotification("agent_progress","Agent progress","Silent progress for Antigravity tasks",b,!0,-1)):'
+        '(a.delete(b)&&(typeof window!=="undefined"&&window.Android?.cancelNotification&&window.Android.cancelNotification("agent_progress",1002),(h.trajectoryMetadata?.parentConversationId||e.push([b,h]))))'
+    )
+    if hda_target in content:
+        content = content.replace(hda_target, hda_injected, 1)
+
+    print("[web-patch] Successfully patched Agent notifications (open chat, completed, progress) into main.js")
     return content, True
 
 
@@ -260,8 +344,16 @@ def patch_main(file_path):
     if not ok_inputs:
         return False
 
+    content, ok_toggles = patch_search_toggles(content)
+    if not ok_toggles:
+        return False
+
     content, ok_universal = patch_main_screen_universal_search(content)
     if not ok_universal:
+        return False
+
+    content, ok_notif = patch_agent_notifications(content)
+    if not ok_notif:
         return False
 
     with open(file_path, "w", encoding="utf-8") as f:

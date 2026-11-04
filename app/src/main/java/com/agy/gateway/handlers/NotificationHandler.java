@@ -3,18 +3,30 @@ package com.agy.gateway.handlers;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.util.Log;
 
 import org.json.JSONObject;
 
 /**
- * Handles native Android notifications (title, message, progress, channels, cancel).
+ * Handles native Android notifications and notification categories:
+ * 1. Agent completed in the open chat (notification shade without a heads-up banner)
+ * 2. Agent completed (floating notification / heads-up banner, finished or needs attention)
+ * 3. Agent progress (silent progress for Antigravity tasks)
  */
 public final class NotificationHandler {
 
     private static final String TAG = "NotificationHandler";
+
+    // User requested notification categories
+    public static final String CHANNEL_AGENT_COMPLETED_OPEN_CHAT = "agent_completed_open_chat";
+    public static final String CHANNEL_AGENT_COMPLETED = "agent_completed";
+    public static final String CHANNEL_AGENT_PROGRESS = "agent_progress";
+
+    // Legacy channel compatibility
     public static final String CHANNEL_TASKS = "agy_tasks";
     public static final String CHANNEL_ALERTS = "agy_alerts";
 
@@ -24,13 +36,51 @@ public final class NotificationHandler {
     public NotificationHandler(Context context) {
         this.context = context.getApplicationContext();
         this.manager = (NotificationManager) this.context.getSystemService(Context.NOTIFICATION_SERVICE);
-        initChannels();
+        initChannels(this.context);
     }
 
-    private void initChannels() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && manager != null) {
+    public static void initChannels(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && context != null) {
+            NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (manager == null) {
+                return;
+            }
+
+            // 1. Agent completed in the open chat: notification shade without a heads-up banner
+            NotificationChannel openChat = new NotificationChannel(
+                    CHANNEL_AGENT_COMPLETED_OPEN_CHAT,
+                    "Agent completed in the open chat",
+                    NotificationManager.IMPORTANCE_DEFAULT);
+            openChat.setDescription("Completion in the open chat: notification shade without a heads-up banner");
+            openChat.setShowBadge(true);
+            openChat.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            manager.createNotificationChannel(openChat);
+
+            // 2. Agent completed: Agent finished or needs attention (floating heads-up banner support)
+            NotificationChannel completed = new NotificationChannel(
+                    CHANNEL_AGENT_COMPLETED,
+                    "Agent completed",
+                    NotificationManager.IMPORTANCE_HIGH);
+            completed.setDescription("Agent finished or needs attention");
+            completed.enableLights(true);
+            completed.enableVibration(true);
+            completed.setShowBadge(true);
+            completed.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            manager.createNotificationChannel(completed);
+
+            // 3. Agent progress: Silent progress for Antigravity tasks
+            NotificationChannel progress = new NotificationChannel(
+                    CHANNEL_AGENT_PROGRESS,
+                    "Agent progress",
+                    NotificationManager.IMPORTANCE_LOW);
+            progress.setDescription("Silent progress for Antigravity tasks");
+            progress.setShowBadge(false);
+            progress.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            manager.createNotificationChannel(progress);
+
+            // Legacy fallback channels for compatibility
             NotificationChannel tasks = new NotificationChannel(
-                    CHANNEL_TASKS, "Antigravity Tasks", NotificationManager.IMPORTANCE_DEFAULT);
+                    CHANNEL_TASKS, "Antigravity Tasks", NotificationManager.IMPORTANCE_LOW);
             tasks.setDescription("Notifications for ongoing AI agent and environment tasks");
             manager.createNotificationChannel(tasks);
 
@@ -38,6 +88,92 @@ public final class NotificationHandler {
                     CHANNEL_ALERTS, "Antigravity Alerts", NotificationManager.IMPORTANCE_HIGH);
             alerts.setDescription("High-priority alerts and task completions");
             manager.createNotificationChannel(alerts);
+        }
+    }
+
+    public static void post(Context context, String channel, String title, String message,
+                            String cascadeId, boolean ongoing, int progress, int id, String tag) {
+        if (context == null) return;
+        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager == null) return;
+
+        initChannels(context);
+
+        // Normalize channel alias
+        if (channel == null || channel.isEmpty()) {
+            channel = ongoing ? CHANNEL_AGENT_PROGRESS : CHANNEL_AGENT_COMPLETED;
+        } else if (CHANNEL_TASKS.equalsIgnoreCase(channel)) {
+            channel = CHANNEL_AGENT_PROGRESS;
+        } else if (CHANNEL_ALERTS.equalsIgnoreCase(channel)) {
+            channel = CHANNEL_AGENT_COMPLETED;
+        }
+
+        int icon = context.getResources().getIdentifier("ic_notification", "drawable", context.getPackageName());
+        if (icon == 0) {
+            icon = android.R.drawable.ic_dialog_info;
+        }
+
+        Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                ? new Notification.Builder(context, channel)
+                : new Notification.Builder(context);
+
+        builder.setContentTitle(title)
+                .setContentText(message)
+                .setSmallIcon(icon)
+                .setOngoing(ongoing)
+                .setAutoCancel(!ongoing);
+
+        // Progress bar configuration
+        if (progress >= 0) {
+            builder.setProgress(100, Math.min(100, Math.max(0, progress)), false);
+        } else if (ongoing) {
+            builder.setProgress(0, 0, true);
+        }
+
+        // Action Intent to bring app to foreground and navigate
+        Intent intent = new Intent(context, com.agy.ui.MainActivity.class);
+        intent.setAction(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        if (cascadeId != null && !cascadeId.isEmpty()) {
+            intent.putExtra("cascade_id", cascadeId);
+        }
+
+        int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        PendingIntent pi = PendingIntent.getActivity(context, id, intent, pendingFlags);
+        builder.setContentIntent(pi);
+
+        // Configure floating notification support / priority
+        if (CHANNEL_AGENT_COMPLETED.equals(channel)) {
+            builder.setPriority(Notification.PRIORITY_HIGH);
+            builder.setDefaults(Notification.DEFAULT_ALL);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                builder.setCategory(Notification.CATEGORY_EVENT);
+            }
+        } else if (CHANNEL_AGENT_PROGRESS.equals(channel)) {
+            builder.setPriority(Notification.PRIORITY_LOW);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                builder.setCategory(Notification.CATEGORY_PROGRESS);
+            }
+        } else {
+            // CHANNEL_AGENT_COMPLETED_OPEN_CHAT: notification shade without a heads-up banner
+            builder.setPriority(Notification.PRIORITY_DEFAULT);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                builder.setCategory(Notification.CATEGORY_STATUS);
+            }
+        }
+
+        manager.notify(tag != null ? tag : "agy_notification", id, builder.build());
+    }
+
+    public static void cancel(Context context, String tag, int id) {
+        if (context == null) return;
+        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            manager.cancel(tag != null ? tag : "agy_notification", id);
         }
     }
 
@@ -49,9 +185,7 @@ public final class NotificationHandler {
             int id = payload.optInt("id", (int) (System.currentTimeMillis() % 100000));
 
             if ("cancel".equalsIgnoreCase(action)) {
-                if (manager != null) {
-                    manager.cancel(tag, id);
-                }
+                cancel(context, tag, id);
                 resp.put("ok", true);
                 resp.put("cancelled", true);
                 return resp;
@@ -61,40 +195,15 @@ public final class NotificationHandler {
             String message = payload.optString("message", "");
             int progress = payload.optInt("progress", -1);
             boolean ongoing = payload.optBoolean("ongoing", false);
-            String channel = payload.optString("channel", CHANNEL_TASKS);
+            String channel = payload.optString("channel", payload.optString("category", null));
+            String cascadeId = payload.optString("cascadeId", payload.optString("cascade_id", null));
 
-            if (manager == null) {
-                resp.put("ok", false);
-                resp.put("error", "NotificationManager unavailable");
-                return resp;
-            }
-
-            int icon = context.getResources().getIdentifier("ic_notification", "drawable", context.getPackageName());
-            if (icon == 0) {
-                icon = android.R.drawable.ic_dialog_info;
-            }
-
-            Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                    ? new Notification.Builder(context, channel)
-                    : new Notification.Builder(context);
-
-            builder.setContentTitle(title)
-                    .setContentText(message)
-                    .setSmallIcon(icon)
-                    .setOngoing(ongoing)
-                    .setAutoCancel(!ongoing);
-
-            if (progress >= 0) {
-                builder.setProgress(100, Math.min(100, Math.max(0, progress)), false);
-            } else if ("indeterminate".equalsIgnoreCase(payload.optString("progress_mode"))) {
-                builder.setProgress(0, 0, true);
-            }
-
-            manager.notify(tag, id, builder.build());
+            post(context, channel, title, message, cascadeId, ongoing, progress, id, tag);
 
             resp.put("ok", true);
             resp.put("tag", tag);
             resp.put("id", id);
+            resp.put("channel", channel);
         } catch (Exception e) {
             Log.w(TAG, "Notification error: " + e.getMessage());
             try {

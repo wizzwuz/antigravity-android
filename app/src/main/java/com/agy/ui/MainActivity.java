@@ -139,6 +139,7 @@ public class MainActivity extends Activity
         themeManager = new ThemeManager(this);
         themeManager.applyToActivity(this);
 
+        com.agy.gateway.handlers.NotificationHandler.initChannels(this);
 
         oauthManager = new OAuthManager();
         runtimeManager = new RuntimeManager(this);

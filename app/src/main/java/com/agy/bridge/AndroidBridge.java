@@ -98,6 +98,26 @@ public final class AndroidBridge {
         ui.setDesktopMode(enabled);
     }
 
+    @JavascriptInterface
+    public void postNotification(String channel, String title, String message, String cascadeId, boolean ongoing, int progress) {
+        final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
+        Context ctx = act != null ? act.getApplicationContext() : null;
+        if (ctx != null) {
+            int id = (int) (System.currentTimeMillis() % 100000);
+            String tag = "agy_" + (cascadeId != null && !cascadeId.isEmpty() ? cascadeId : "notif");
+            com.agy.gateway.handlers.NotificationHandler.post(ctx, channel, title, message, cascadeId, ongoing, progress, id, tag);
+        }
+    }
+
+    @JavascriptInterface
+    public void cancelNotification(String tag, int id) {
+        final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
+        Context ctx = act != null ? act.getApplicationContext() : null;
+        if (ctx != null) {
+            com.agy.gateway.handlers.NotificationHandler.cancel(ctx, tag, id);
+        }
+    }
+
     // Native-only helpers used while preparing the trusted app document.
     public boolean isEngineReady() {
         return engine.isReady();

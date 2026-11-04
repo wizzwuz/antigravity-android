@@ -19,6 +19,7 @@ shift || true
 TITLE="Antigravity"
 SUBTITLE=""
 MESSAGE=""
+CHANNEL="agent_completed"
 TAG="agy_$(date +%s)"
 
 if [ "$CMD" = "cancel" ]; then
@@ -46,6 +47,11 @@ while [[ $# -gt 0 ]]; do
         -m|--message)
             [ "$#" -ge 2 ] || { echo "agy-notify: missing value for $1" >&2; exit 2; }
             MESSAGE="$2"
+            shift 2
+            ;;
+        -c|--channel|--category)
+            [ "$#" -ge 2 ] || { echo "agy-notify: missing value for $1" >&2; exit 2; }
+            CHANNEL="$2"
             shift 2
             ;;
         --tag)
@@ -94,11 +100,16 @@ if [ "$CMD" = "post" ]; then
             fi
         fi
 
-        "$RISH_BIN" -c "cmd notification post -S bigtext $LARGE_ICON_OPT -t $(printf %q "$TITLE") $(printf %q "$TAG") $(printf %q "$BODY_TEXT")" 2>/dev/null && exit 0
+        CHANNEL_OPT=""
+        [ -n "$CHANNEL" ] && CHANNEL_OPT="-c $(printf %q "$CHANNEL")"
+
+        "$RISH_BIN" -c "cmd notification post -S bigtext $CHANNEL_OPT $LARGE_ICON_OPT -t $(printf %q "$TITLE") $(printf %q "$TAG") $(printf %q "$BODY_TEXT")" 2>/dev/null && exit 0
     fi
 
-    cmd notification post -S bigtext -t "$TITLE" "$TAG" "$BODY_TEXT" 2>/dev/null && exit 0 || true
-    echo "[agy-notify] notification queued: $TITLE - $MESSAGE"
+    CHANNEL_OPT=""
+    [ -n "$CHANNEL" ] && CHANNEL_OPT="-c $CHANNEL"
+    cmd notification post -S bigtext $CHANNEL_OPT -t "$TITLE" "$TAG" "$BODY_TEXT" 2>/dev/null && exit 0 || true
+    echo "[agy-notify] notification queued ($CHANNEL): $TITLE - $MESSAGE"
 
 elif [ "$CMD" = "cancel" ]; then
     if [ -x "$RISH_BIN" ]; then
