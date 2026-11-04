@@ -321,7 +321,48 @@ def patch_agent_notifications(content):
         print("[web-patch] Agent notifications already patched in main.js")
         return content, True
 
-    # 1. Patch HDa for live real-time progress and completion tracking per conversation
+    # 1. Patch Redux middleware rm.match(n) for direct multi-conversation progress & completion tracking
+    rm_target = 'return rm.match(n)?(q=m(n),'
+    rm_injected = (
+        'return rm.match(n)?('
+        '(function(pld){try{'
+        'if(typeof window!=="undefined"&&window.Android&&pld){'
+        'if(!window.__agyActiveRuns)window.__agyActiveRuns=new Set();'
+        'if(Array.isArray(pld.updates)){'
+        'for(let [cid,s] of pld.updates){'
+        'if(!cid||!s)continue;'
+        'if(s.notFullyIdle){'
+        'window.__agyActiveRuns.add(cid);'
+        'var t=s.summary||s.title||"Agent running";'
+        'var st=s.stepCount?("Step "+s.stepCount+": "):"";'
+        'var bd=st+(s.preview||"Working on task...");'
+        'window.Android.postNotification("agent_progress",t,bd,cid,true,-1);'
+        '}else if(window.__agyActiveRuns.has(cid)){'
+        'window.__agyActiveRuns.delete(cid);'
+        'window.Android.cancelNotification("cascade_prog_"+cid,0);'
+        'var ct=s.summary||s.title||"Agent completed";'
+        'var cb=s.preview||"Agent finished the task";'
+        'window.Android.postNotification("agent_completed",ct,cb,cid,false,-1);'
+        '}'
+        '}'
+        '}'
+        'if(Array.isArray(pld.deletes)){'
+        'for(let cid of pld.deletes){'
+        'if(window.__agyActiveRuns.has(cid)){'
+        'window.__agyActiveRuns.delete(cid);'
+        'window.Android.cancelNotification("cascade_prog_"+cid,0);'
+        '}'
+        '}'
+        '}'
+        '}'
+        '}catch(_){}})(n.payload),'
+        'q=m(n),'
+    )
+    if rm_target in content:
+        content = content.replace(rm_target, rm_injected, 1)
+        print("[web-patch] Patched Redux rm middleware with multi-conversation progress and completion notifications")
+
+    # 2. Patch HDa for live real-time progress and completion tracking per conversation
     hda_target = 'h.notFullyIdle?a.add(b):a.delete(b)&&(h.trajectoryMetadata?.parentConversationId||e.push([b,h]))'
     hda_injected = (
         'h.notFullyIdle?('
@@ -330,7 +371,7 @@ def patch_agent_notifications(content):
         'var t=h.summary||h.title||"Agent running";'
         'var st=h.stepCount?("Step "+h.stepCount+": "):"";'
         'var bd=st+(h.preview||"Working on task...");'
-        'var pr=h.stepCount?Math.min(95,h.stepCount*5):-1;'
+        'var pr=-1;'
         'window.Android.postNotification("agent_progress",t,bd,b,true,pr);'
         '}}catch(_){}})()'
         '):('
@@ -349,7 +390,7 @@ def patch_agent_notifications(content):
         content = content.replace(hda_target, hda_injected, 1)
         print("[web-patch] Patched HDa stream listener with multi-conversation progress and completion notifications")
 
-    # 2. Patch KDa for required actions (permissions, questions)
+    # 3. Patch KDa for required actions (permissions, questions)
     kda_act_target = 'r&&(f.actionRequired&&g?.({soundFile:f.actionRequired}),c?.(r))'
     kda_act_injected = (
         'r&&('
@@ -363,7 +404,7 @@ def patch_agent_notifications(content):
         content = content.replace(kda_act_target, kda_act_injected, 1)
         print("[web-patch] Patched KDa with agent action/question notification")
 
-    # 3. Patch KDa for cascadeDone completion dispatch
+    # 4. Patch KDa for cascadeDone completion dispatch
     kda_fin_target = 'c?.({id:`agent-finished-${l}-${Date.now()}`,title:e,body:q.summary||"Agent finished",payload:{cascadeId:l,type:"request_action",workspaceUri:void 0}})'
     kda_fin_injected = (
         '('
@@ -386,7 +427,7 @@ def patch_full_text_conversation_search(content):
         print("[web-patch] Full text conversation search already present in main.js")
         return content, True
 
-    # Patch cBb to query native full-text transcript search from Android bridge
+    # 1. Patch cBb to query native full-text transcript search from Android bridge
     cbb_target = 'let J=H(await G(c({query:b,limit:50,signal:D.signal})));'
     cbb_injected = (
         'let J;'
@@ -395,8 +436,8 @@ def patch_full_text_conversation_search(content):
         'var natStr=window.Android.searchConversations(b,50);'
         'if(natStr){'
         'var natJson=JSON.parse(natStr);'
-        'if(natJson&&Array.isArray(natJson.results)&&natJson.results.length>0){'
-        'J=natJson;'
+        'if(natJson&&Array.isArray(natJson.results)){'
+        'J={results:natJson.results,indexStale:!1,searchFailed:!1};'
         '}'
         '}'
         '}catch(natErr){console.warn("[AGY Search] native search error:",natErr);}'
@@ -411,6 +452,27 @@ def patch_full_text_conversation_search(content):
     else:
         print("[web-patch] cBb target not found in main.js", file=sys.stderr)
         return content, False
+
+    # 2. Patch nBb to always enable full-text conversation search v2 on Android
+    nbb_flag_target = '],[q]),u=Lj().get("conversationSearchV2")??!1,'
+    nbb_flag_injected = '],[q]),u=!0,'
+    if nbb_flag_target in content:
+        content = content.replace(nbb_flag_target, nbb_flag_injected, 1)
+        print("[web-patch] Successfully enabled conversationSearchV2 in nBb")
+
+    # 3. Patch nBb result fallback to keep title-based results if transcript search returned no matches
+    nbb_res_target = 'B?v.length===0?[]:[{id:"Results",preScored:!0,items:v.map(aBb)}]:t:r'
+    nbb_res_injected = 'B?v.length===0?r:[{id:"Results",preScored:!0,items:v.map(aBb)}]:t:r'
+    if nbb_res_target in content:
+        content = content.replace(nbb_res_target, nbb_res_injected, 1)
+        print("[web-patch] Successfully patched nBb results with fallback")
+
+    # 4. Patch kBb in unified search to prioritize Conversations section when results are matched
+    kbb_target = 'h=f==="Code Search"?fL(`${k} ${l}`,b)?c?2:1:0:fL(k,b)?2:fL(l,b)?1:0'
+    kbb_injected = 'h=f==="Conversations"&&g.length>0?2:(f==="Code Search"?fL(`${k} ${l}`,b)?c?2:1:0:fL(k,b)?2:fL(l,b)?1:0)'
+    if kbb_target in content:
+        content = content.replace(kbb_target, kbb_injected, 1)
+        print("[web-patch] Successfully prioritized Conversations in kBb")
 
     return content, True
 

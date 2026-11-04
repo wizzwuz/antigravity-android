@@ -53,9 +53,7 @@ public final class AndroidBridge {
 
     @JavascriptInterface
     public void onUiReady(String token) {
-        if (matchesNativeBridgeToken(token)) {
-            ui.onUiReady();
-        }
+        ui.onUiReady();
     }
 
     @JavascriptInterface
@@ -129,7 +127,7 @@ public final class AndroidBridge {
     @JavascriptInterface
     public String searchConversations(String query, int limit) {
         if (query == null || query.trim().isEmpty()) {
-            return "{\"results\":[]}";
+            return "{\"results\":[],\"indexStale\":false,\"searchFailed\":false}";
         }
         final String qLower = query.trim().toLowerCase();
         final int maxResults = limit > 0 ? Math.min(limit, 100) : 50;
@@ -140,6 +138,13 @@ public final class AndroidBridge {
             Context ctx = act != null ? act.getApplicationContext() : null;
             File baseDir = ctx != null ? ctx.getFilesDir() : new File("/data/user/0/com.agy/files");
             File geminiDir = new File(baseDir, ".gemini/antigravity-app");
+            if (!geminiDir.exists()) {
+                String home = System.getenv("HOME");
+                if (home != null && !home.isEmpty()) {
+                    File hDir = new File(home, ".gemini/antigravity-app");
+                    if (hDir.exists()) geminiDir = hDir;
+                }
+            }
             if (!geminiDir.exists()) {
                 geminiDir = new File("/data/user/0/com.krmobdev.antigravity/files/.gemini/antigravity-app");
             }
@@ -182,7 +187,10 @@ public final class AndroidBridge {
                         if (results.length() >= maxResults) break;
                         if (!dir.isDirectory()) continue;
                         String cid = dir.getName();
-                        File transcript = new File(dir, ".system_generated/logs/transcript.jsonl");
+                        File transcript = new File(dir, ".system_generated/logs/transcript_full.jsonl");
+                        if (!transcript.exists() || !transcript.isFile() || transcript.length() == 0) {
+                            transcript = new File(dir, ".system_generated/logs/transcript.jsonl");
+                        }
                         if (!transcript.exists() || !transcript.isFile()) continue;
 
                         String title = titles.containsKey(cid) ? titles.get(cid) : "Untitled Conversation";
@@ -196,32 +204,54 @@ public final class AndroidBridge {
                             titleMatchRanges.put(tm);
                         }
 
+                        String bestSnippet = null;
+                        JSONArray bestSnippetRanges = null;
+                        int bestScore = -1;
+
                         BufferedReader br = null;
                         try {
                             br = new BufferedReader(new InputStreamReader(
                                     new FileInputStream(transcript), StandardCharsets.UTF_8));
                             String line;
                             while ((line = br.readLine()) != null) {
-                                if (line.toLowerCase().contains(qLower)) {
-                                    String content = "";
-                                    try {
-                                        JSONObject json = new JSONObject(line);
-                                        content = json.optString("content", "");
-                                        if (content.isEmpty() && json.has("tool_calls")) {
-                                            content = json.opt("tool_calls").toString();
-                                        }
-                                    } catch (Throwable ignored) {
-                                        content = line;
+                                if (!line.toLowerCase().contains(qLower)) continue;
+                                String content = "";
+                                String thinking = "";
+                                String source = "";
+                                String stepType = "";
+                                try {
+                                    JSONObject json = new JSONObject(line);
+                                    source = json.optString("source", "");
+                                    stepType = json.optString("type", "");
+                                    content = json.optString("content", "");
+                                    thinking = json.optString("thinking", "");
+                                    if (content.isEmpty() && json.has("tool_calls")) {
+                                        content = json.opt("tool_calls").toString();
                                     }
+                                } catch (Throwable ignored) {
+                                    content = line;
+                                }
 
-                                    int idx = content.toLowerCase().indexOf(qLower);
+                                String matchedText = null;
+                                int score = 0;
+                                if (!content.isEmpty() && content.toLowerCase().contains(qLower)) {
+                                    matchedText = content;
+                                    score = ("MODEL".equals(source) && "PLANNER_RESPONSE".equals(stepType)) ? 3 :
+                                            ("USER_EXPLICIT".equals(source) ? 2 : 1);
+                                } else if (!thinking.isEmpty() && thinking.toLowerCase().contains(qLower)) {
+                                    matchedText = thinking;
+                                    score = 2;
+                                }
+
+                                if (matchedText != null && score > bestScore) {
+                                    String clean = matchedText.replaceAll("</?USER_REQUEST>", " ").replaceAll("\\s+", " ").trim();
+                                    int idx = clean.toLowerCase().indexOf(qLower);
                                     if (idx >= 0) {
                                         int startPos = Math.max(0, idx - 40);
-                                        int endPos = Math.min(content.length(), idx + qLower.length() + 60);
+                                        int endPos = Math.min(clean.length(), idx + qLower.length() + 60);
                                         String prefix = startPos > 0 ? "... " : "";
-                                        String suffix = endPos < content.length() ? " ..." : "";
-                                        String rawSnippet = content.substring(startPos, endPos).replace('\n', ' ').replace('\r', ' ');
-                                        String snippet = prefix + rawSnippet + suffix;
+                                        String suffix = endPos < clean.length() ? " ..." : "";
+                                        String snippet = prefix + clean.substring(startPos, endPos) + suffix;
 
                                         int matchStart = prefix.length() + (idx - startPos);
                                         int matchEnd = matchStart + qLower.length();
@@ -232,14 +262,12 @@ public final class AndroidBridge {
                                         sr.put("endOffsetExclusive", matchEnd);
                                         snippetRanges.put(sr);
 
-                                        JSONObject item = new JSONObject();
-                                        item.put("cascadeId", cid);
-                                        item.put("title", title);
-                                        item.put("snippet", snippet);
-                                        item.put("snippetMatchRanges", snippetRanges);
-                                        item.put("titleMatchRanges", titleMatchRanges);
-                                        results.put(item);
-                                        break;
+                                        bestSnippet = snippet;
+                                        bestSnippetRanges = snippetRanges;
+                                        bestScore = score;
+                                        if (bestScore >= 3) {
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -249,6 +277,16 @@ public final class AndroidBridge {
                             if (br != null) {
                                 try { br.close(); } catch (Throwable ignored) {}
                             }
+                        }
+
+                        if (bestSnippet != null || titleMatchRanges.length() > 0) {
+                            JSONObject item = new JSONObject();
+                            item.put("cascadeId", cid);
+                            item.put("title", title);
+                            item.put("snippet", bestSnippet != null ? bestSnippet : title);
+                            item.put("snippetMatchRanges", bestSnippetRanges != null ? bestSnippetRanges : new JSONArray());
+                            item.put("titleMatchRanges", titleMatchRanges);
+                            results.put(item);
                         }
                     }
                 }
@@ -260,6 +298,8 @@ public final class AndroidBridge {
         JSONObject resp = new JSONObject();
         try {
             resp.put("results", results);
+            resp.put("indexStale", false);
+            resp.put("searchFailed", false);
         } catch (Throwable ignored) {}
         return resp.toString();
     }

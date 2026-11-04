@@ -145,8 +145,10 @@ public final class NotificationHandler {
                 .setOngoing(ongoing)
                 .setAutoCancel(!ongoing);
 
-        // Progress bar configuration
-        if (progress >= 0) {
+        // Progress bar configuration: always smooth continuous indeterminate for agent_progress
+        if (CHANNEL_AGENT_PROGRESS.equals(channel)) {
+            builder.setProgress(0, 0, true);
+        } else if (progress >= 0) {
             builder.setProgress(100, Math.min(100, Math.max(0, progress)), false);
         } else if (ongoing) {
             builder.setProgress(0, 0, true);
@@ -196,14 +198,26 @@ public final class NotificationHandler {
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager == null) return;
 
-        if (tag != null && tag.startsWith("cascade_")) {
-            // Cancel by explicit tag and computed ID if id is 0
-            int cancelId = id > 0 ? id : 10000 + Math.abs(tag.hashCode() % 50000);
-            manager.cancel(tag, cancelId);
-            // Also try canceling with 0 or fallback ID
+        if (tag != null) {
+            String cid = tag;
+            if (cid.startsWith("cascade_prog_")) {
+                cid = cid.substring("cascade_prog_".length());
+            } else if (cid.startsWith("cascade_done_")) {
+                cid = cid.substring("cascade_done_".length());
+            } else if (cid.startsWith("cascade_")) {
+                cid = cid.substring("cascade_".length());
+            }
+
+            int hashOffset = Math.abs(cid.hashCode() % 50000);
+            int progId = 10000 + hashOffset;
+            int doneId = 60000 + hashOffset;
+
+            manager.cancel(tag, id > 0 ? id : progId);
+            manager.cancel("cascade_prog_" + cid, progId);
+            manager.cancel("cascade_done_" + cid, doneId);
             manager.cancel(tag, 0);
         } else {
-            manager.cancel(tag != null ? tag : "agy_notification", id);
+            manager.cancel("agy_notification", id);
         }
     }
 

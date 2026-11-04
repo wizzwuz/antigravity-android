@@ -122,7 +122,7 @@ public final class SplashController {
         dismissed = true;
         view.animate()
                 .alpha(0f)
-                .setDuration(280)
+                .setDuration(120)
                 .withEndAction(new Runnable() {
                     @Override
                     public void run() {

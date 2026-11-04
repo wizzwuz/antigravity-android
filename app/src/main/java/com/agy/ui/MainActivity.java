@@ -120,7 +120,7 @@ public class MainActivity extends Activity
                             dismissSplash();
                         }
                     }
-                }, 10000);
+                }, 2000);
             }
             return;
         }
@@ -215,6 +215,7 @@ public class MainActivity extends Activity
     @Override
     public void onPageFinished(String url) {
         Log.i(TAG, "onPageFinished " + SensitiveDataRedactor.safeUrl(url));
+        handler.postDelayed(this::dismissSplash, 200);
     }
 
     /** Idempotent; called by AndroidBridge.onUiReady() on the main thread. */

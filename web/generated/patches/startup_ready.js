@@ -129,16 +129,16 @@ function arm() {
     if (isUiRendered() || state.signalled) {
       global.clearInterval(poller);
     }
-  }, 40);
+  }, 15);
 
-  // Fallback: 5.5 seconds maximum waiting time
+  // Snappy fallback: 750ms maximum waiting time
   global.setTimeout(function () {
     global.clearInterval(poller);
     if (isUiRendered()) {
       return;
     }
     signal('fallback-timeout');
-  }, 5500);
+  }, 750);
 }
 
 /**
