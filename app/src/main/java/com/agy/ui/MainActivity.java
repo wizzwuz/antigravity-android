@@ -17,6 +17,11 @@ import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.app.AlarmManager;
+import android.app.AlertDialog;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.Toast;
@@ -479,21 +484,29 @@ public class MainActivity extends Activity
     public static final int REQUEST_BACKUP_PROJECTS = 2005;
     public static final int REQUEST_RESTORE_PROJECTS = 2006;
 
+    private String pendingConversationBackupScope = null;
     private String pendingProjectBackupName = null;
     private String pendingProjectRestoreTarget = null;
 
-    public void launchBackupConversationsPicker() {
+    public void launchBackupConversationsPicker(String conversationScope) {
         try {
+            pendingConversationBackupScope = conversationScope;
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("application/zip");
+            boolean isSpecific = conversationScope != null && !conversationScope.trim().isEmpty() && !"all".equalsIgnoreCase(conversationScope.trim());
+            String prefix = isSpecific ? "antigravity-convo-" + (conversationScope.length() > 8 ? conversationScope.substring(0, 8) : conversationScope) : "antigravity-conversations";
             String dateStr = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(new java.util.Date());
-            intent.putExtra(Intent.EXTRA_TITLE, "antigravity-conversations-" + dateStr + ".zip");
+            intent.putExtra(Intent.EXTRA_TITLE, prefix + "-" + dateStr + ".zip");
             startActivityForResult(intent, REQUEST_BACKUP_CONVERSATIONS);
         } catch (Throwable t) {
             Log.w(TAG, "Cannot launch backup conversations picker: " + t.getMessage());
             notifyBackupRestoreStatus("backup_conversation", false, "Cannot launch file picker: " + t.getMessage(), null);
         }
+    }
+
+    public void launchBackupConversationsPicker() {
+        launchBackupConversationsPicker(null);
     }
 
     public void launchRestoreConversationsPicker() {
@@ -563,6 +576,83 @@ public class MainActivity extends Activity
         });
     }
 
+    public void showRestartPrompt(final String message) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (isFinishing()) return;
+                try {
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Restart Required")
+                            .setMessage(message != null ? message : "Restoration completed successfully. Would you like to restart the app now to apply all changes?")
+                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    restartApp();
+                                }
+                            })
+                            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                }
+                            })
+                            .setCancelable(true)
+                            .show();
+                } catch (Throwable t) {
+                    Log.w(TAG, "Cannot show restart prompt dialog: " + t.getMessage());
+                }
+            }
+        });
+    }
+
+    public void restartApp() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Context context = getApplicationContext();
+                    String pkg = context.getPackageName();
+                    Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(pkg);
+                    if (launchIntent != null) {
+                        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                        PendingIntent pi = PendingIntent.getActivity(
+                                context,
+                                29999,
+                                launchIntent,
+                                PendingIntent.FLAG_CANCEL_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+                        );
+                        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+                        if (am != null) {
+                            long triggerAt = System.currentTimeMillis() + 600;
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                am.setExactAndAllowWhileIdle(AlarmManager.RTC, triggerAt, pi);
+                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                                am.setExact(AlarmManager.RTC, triggerAt, pi);
+                            } else {
+                                am.set(AlarmManager.RTC, triggerAt, pi);
+                            }
+                        }
+                    }
+
+                    try {
+                        Runtime.getRuntime().exec(new String[]{"sh", "-c", "sleep 1; am start -n " + pkg + "/com.agy.ui.MainActivity"});
+                    } catch (Throwable ignored) {}
+
+                    try {
+                        com.agy.core.CoreServiceLauncher.stop(context);
+                    } catch (Throwable ignored) {}
+
+                    finishAffinity();
+                    android.os.Process.killProcess(android.os.Process.myPid());
+                    System.exit(0);
+                } catch (Throwable t) {
+                    Log.e(TAG, "Failed to restart app", t);
+                }
+            }
+        });
+    }
+
     public void launchDirectoryPicker() {
         try {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
@@ -586,10 +676,12 @@ public class MainActivity extends Activity
                 return;
             }
             final Uri destUri = data.getData();
+            final String convoScope = pendingConversationBackupScope;
+            pendingConversationBackupScope = null;
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    JSONObject res = com.agy.util.BackupRestoreHelper.backupConversations(MainActivity.this, destUri);
+                    JSONObject res = com.agy.util.BackupRestoreHelper.backupConversations(MainActivity.this, convoScope, destUri);
                     boolean ok = res.optBoolean("success", false);
                     String msg = ok ? res.optString("message", "Conversations backup completed")
                                     : res.optString("error", "Backup failed");
@@ -613,6 +705,9 @@ public class MainActivity extends Activity
                     String msg = ok ? res.optString("message", "Conversations restored successfully")
                                     : res.optString("error", "Restore failed");
                     notifyBackupRestoreStatus("restore_conversation", ok, msg, res);
+                    if (ok) {
+                        showRestartPrompt("Conversations restored successfully. Would you like to restart the app now to reload all conversations?");
+                    }
                 }
             }).start();
             return;
@@ -655,6 +750,9 @@ public class MainActivity extends Activity
                     String msg = ok ? res.optString("message", "Projects restored successfully")
                                     : res.optString("error", "Restore failed");
                     notifyBackupRestoreStatus("restore_projects", ok, msg, res);
+                    if (ok) {
+                        showRestartPrompt("Projects restored successfully. Would you like to restart the app now to reload your workspace?");
+                    }
                 }
             }).start();
             return;

@@ -19,6 +19,9 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import android.database.Cursor;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -78,12 +81,72 @@ public final class BackupRestoreHelper {
         return arr.toString();
     }
 
+    public static String listConversationsJson(Context context) {
+        JSONArray arr = new JSONArray();
+        try {
+            File geminiDir = getGeminiDir(context);
+            Map<String, String> titles = new LinkedHashMap<String, String>();
+            File dbFile = new File(geminiDir, "conversation_summaries.db");
+            if (dbFile.exists()) {
+                SQLiteDatabase db = null;
+                Cursor cursor = null;
+                try {
+                    db = SQLiteDatabase.openDatabase(dbFile.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
+                    cursor = db.rawQuery("SELECT conversation_id, title FROM conversation_summaries ORDER BY last_modified_time DESC", null);
+                    if (cursor != null && cursor.moveToFirst()) {
+                        do {
+                            String cid = cursor.getString(0);
+                            String title = cursor.getString(1);
+                            if (cid != null && !cid.isEmpty()) {
+                                titles.put(cid, (title != null && !title.trim().isEmpty()) ? title : "Untitled Conversation");
+                            }
+                        } while (cursor.moveToNext());
+                    }
+                } catch (Throwable t) {
+                    Log.w(TAG, "listConversations db error: " + t.getMessage());
+                } finally {
+                    if (cursor != null) { try { cursor.close(); } catch (Throwable ignored) {} }
+                    if (db != null) { try { db.close(); } catch (Throwable ignored) {} }
+                }
+            }
+
+            File brainDir = new File(geminiDir, "brain");
+            if (brainDir.exists() && brainDir.isDirectory()) {
+                File[] dirs = brainDir.listFiles();
+                if (dirs != null) {
+                    for (File d : dirs) {
+                        if (d.isDirectory() && !d.getName().startsWith(".")) {
+                            String cid = d.getName();
+                            if (!titles.containsKey(cid)) {
+                                titles.put(cid, "Untitled (" + (cid.length() > 8 ? cid.substring(0, 8) : cid) + ")");
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (Map.Entry<String, String> entry : titles.entrySet()) {
+                JSONObject item = new JSONObject();
+                item.put("id", entry.getKey());
+                item.put("title", entry.getValue());
+                arr.put(item);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "listConversationsJson error: " + t.getMessage());
+        }
+        return arr.toString();
+    }
+
     public static JSONObject backupConversations(Context context, Uri destinationUri) {
+        return backupConversations(context, null, destinationUri);
+    }
+
+    public static JSONObject backupConversations(Context context, String conversationScope, Uri destinationUri) {
         JSONObject res = new JSONObject();
         ZipOutputStream zos = null;
         OutputStream os = null;
         int count = 0;
-        long totalBytes = 0;
+        File tempSummaryDb = null;
 
         try {
             File geminiDir = getGeminiDir(context);
@@ -103,34 +166,91 @@ public final class BackupRestoreHelper {
             zos = new ZipOutputStream(new BufferedOutputStream(os, BUFFER_SIZE));
             zos.setLevel(Deflater.BEST_COMPRESSION);
 
-            // 1. conversation_summaries database files
-            String[] dbNames = new String[]{
-                    "conversation_summaries.db",
-                    "conversation_summaries.db-wal",
-                    "conversation_summaries.db-shm",
-                    "agyhub_summaries_proto.pb"
-            };
-            for (String dbName : dbNames) {
-                File f = new File(geminiDir, dbName);
-                if (f.exists() && f.isFile()) {
-                    addFileToZip(zos, f, dbName);
-                    count++;
-                    totalBytes += f.length();
+            boolean isSpecific = conversationScope != null && !conversationScope.trim().isEmpty() && !"all".equalsIgnoreCase(conversationScope.trim());
+            String targetId = isSpecific ? conversationScope.trim() : null;
+
+            if (isSpecific) {
+                // 1. Specific conversation database files
+                File convDir = new File(geminiDir, "conversations");
+                if (convDir.exists() && convDir.isDirectory()) {
+                    String[] extensions = new String[]{"", "-wal", "-shm"};
+                    for (String ext : extensions) {
+                        File dbFile = new File(convDir, targetId + ".db" + ext);
+                        if (dbFile.exists() && dbFile.isFile()) {
+                            addFileToZip(zos, dbFile, "conversations/" + dbFile.getName());
+                            count++;
+                        }
+                    }
                 }
-            }
 
-            // 2. conversations directory (*.db files)
-            File convDir = new File(geminiDir, "conversations");
-            if (convDir.exists() && convDir.isDirectory()) {
-                int added = addDirToZip(zos, convDir, "conversations", geminiDir);
-                count += added;
-            }
+                // 2. Specific conversation brain directory
+                File brainSubDir = new File(geminiDir, "brain/" + targetId);
+                if (brainSubDir.exists() && brainSubDir.isDirectory()) {
+                    int added = addDirToZip(zos, brainSubDir, "brain/" + targetId, geminiDir);
+                    count += added;
+                }
 
-            // 3. brain directory (conversation trajectories & artifacts)
-            File brainDir = new File(geminiDir, "brain");
-            if (brainDir.exists() && brainDir.isDirectory()) {
-                int added = addDirToZip(zos, brainDir, "brain", geminiDir);
-                count += added;
+                // 3. Export specific summary row into a standalone conversation_summaries.db inside zip
+                File existingDb = new File(geminiDir, "conversation_summaries.db");
+                if (existingDb.exists() && existingDb.length() > 0) {
+                    tempSummaryDb = new File(geminiDir, "temp_export_summary_" + System.currentTimeMillis() + ".db");
+                    SQLiteDatabase srcDb = null;
+                    SQLiteDatabase dstDb = null;
+                    Cursor cur = null;
+                    try {
+                        srcDb = SQLiteDatabase.openDatabase(existingDb.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
+                        dstDb = SQLiteDatabase.openOrCreateDatabase(tempSummaryDb, null);
+                        cur = srcDb.rawQuery("SELECT sql FROM sqlite_master WHERE type='table' AND name='conversation_summaries'", null);
+                        if (cur != null && cur.moveToFirst()) {
+                            String createSql = cur.getString(0);
+                            dstDb.execSQL(createSql);
+                            srcDb.execSQL("ATTACH DATABASE ? AS export_db", new String[]{tempSummaryDb.getAbsolutePath()});
+                            srcDb.execSQL("INSERT INTO export_db.conversation_summaries SELECT * FROM conversation_summaries WHERE conversation_id = ?", new String[]{targetId});
+                            srcDb.execSQL("DETACH DATABASE export_db");
+                        }
+                        dstDb.close();
+                        dstDb = null;
+                        if (tempSummaryDb.exists() && tempSummaryDb.length() > 0) {
+                            addFileToZip(zos, tempSummaryDb, "conversation_summaries.db");
+                            count++;
+                        }
+                    } catch (Throwable t) {
+                        Log.w(TAG, "Single conversation summary export: " + t.getMessage());
+                    } finally {
+                        if (cur != null) { try { cur.close(); } catch (Throwable ignored) {} }
+                        if (dstDb != null) { try { dstDb.close(); } catch (Throwable ignored) {} }
+                        if (srcDb != null) { try { srcDb.close(); } catch (Throwable ignored) {} }
+                    }
+                }
+            } else {
+                // 1. All conversation_summaries database files
+                String[] dbNames = new String[]{
+                        "conversation_summaries.db",
+                        "conversation_summaries.db-wal",
+                        "conversation_summaries.db-shm",
+                        "agyhub_summaries_proto.pb"
+                };
+                for (String dbName : dbNames) {
+                    File f = new File(geminiDir, dbName);
+                    if (f.exists() && f.isFile()) {
+                        addFileToZip(zos, f, dbName);
+                        count++;
+                    }
+                }
+
+                // 2. All conversations directory (*.db files)
+                File convDir = new File(geminiDir, "conversations");
+                if (convDir.exists() && convDir.isDirectory()) {
+                    int added = addDirToZip(zos, convDir, "conversations", geminiDir);
+                    count += added;
+                }
+
+                // 3. All brain directory (conversation trajectories & artifacts)
+                File brainDir = new File(geminiDir, "brain");
+                if (brainDir.exists() && brainDir.isDirectory()) {
+                    int added = addDirToZip(zos, brainDir, "brain", geminiDir);
+                    count += added;
+                }
             }
 
             zos.finish();

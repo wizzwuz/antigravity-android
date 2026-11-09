@@ -33,8 +33,8 @@ apk_path = sys.argv[1]
 dex_path = sys.argv[2]
 assets_dir = sys.argv[3]
 
-with zipfile.ZipFile(apk_path, "a", compression=zipfile.ZIP_DEFLATED) as z:
-    z.write(dex_path, "classes.dex")
+with zipfile.ZipFile(apk_path, "a", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+    z.write(dex_path, "classes.dex", compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
     if os.path.isdir(assets_dir):
         staging_parent = os.path.dirname(assets_dir)
         for root, dirs, files in os.walk(assets_dir):
@@ -43,7 +43,10 @@ with zipfile.ZipFile(apk_path, "a", compression=zipfile.ZIP_DEFLATED) as z:
                 rel = os.path.relpath(full, staging_parent)
                 # Avoid recompressing already-compressed archives
                 comp = zipfile.ZIP_STORED if f.endswith(('.gz', '.tgz', '.zip', '.png', '.jpg')) else zipfile.ZIP_DEFLATED
-                z.write(full, rel, compress_type=comp)
+                if comp == zipfile.ZIP_DEFLATED:
+                    z.write(full, rel, compress_type=comp, compresslevel=9)
+                else:
+                    z.write(full, rel, compress_type=comp)
 PY
 
 echo "[OK] [06_package] Created $(stat -c%s "$UNALIGNED_APK") bytes unaligned.apk"

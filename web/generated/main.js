@@ -9913,6 +9913,10 @@ var [status,setStatus]=(0,A.useState)(null);
 var [isProcessing,setIsProcessing]=(0,A.useState)(!1);
 var [projects,setProjects]=(0,A.useState)([]);
 var [selectedProject,setSelectedProject]=(0,A.useState)("all");
+var [conversations,setConversations]=(0,A.useState)([]);
+var [selectedConversation,setSelectedConversation]=(0,A.useState)("all");
+var [showRestartPrompt,setShowRestartPrompt]=(0,A.useState)(!1);
+var [restartMessage,setRestartMessage]=(0,A.useState)("");
 (0,A.useEffect)(()=>{
 try{
 if(typeof window!=="undefined"&&window.Android&&typeof window.Android.listProjects==="function"){
@@ -9920,11 +9924,21 @@ var pList=JSON.parse(window.Android.listProjects()||"[]");
 if(Array.isArray(pList))setProjects(pList);
 }
 }catch(_){}
+try{
+if(typeof window!=="undefined"&&window.Android&&typeof window.Android.listConversations==="function"){
+var cList=JSON.parse(window.Android.listConversations()||"[]");
+if(Array.isArray(cList))setConversations(cList);
+}
+}catch(_){}
 if(typeof window!=="undefined"){
 window.__onBackupRestoreStatus=function(res){
 setIsProcessing(!1);
 if(typeof res==="string"){try{res=JSON.parse(res)}catch(_){res={message:res}}}
 setStatus(res);
+if(res&&res.success&&(res.type==="restore_conversation"||res.type==="restore_projects")){
+setRestartMessage(res.type==="restore_conversation"?"Conversations restored successfully. Would you like to restart the app now to reload all conversations?":"Projects restored successfully. Would you like to restart the app now to reload your workspace?");
+setShowRestartPrompt(!0);
+}
 };
 return function(){
 if(typeof window!=="undefined")window.__onBackupRestoreStatus=null;
@@ -9935,7 +9949,7 @@ var onBackupConvos=()=>{
 setIsProcessing(!0);
 setStatus({type:"info",message:"Opening file picker to choose backup location..."});
 try{
-if(window.Android&&typeof window.Android.backupConversations==="function")window.Android.backupConversations();
+if(window.Android&&typeof window.Android.backupConversations==="function")window.Android.backupConversations(selectedConversation);
 else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
 }catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
 };
@@ -9964,7 +9978,19 @@ else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge 
 }catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
 };
 return A.createElement(G_,{title:"Backup and Restore"},
-A.createElement("div",{className:"space-y-6 max-w-2xl pb-8 p-1"},
+A.createElement("div",{className:"space-y-6 max-w-2xl pb-8 p-1 relative"},
+showRestartPrompt&&A.createElement("div",{className:"fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in"},
+A.createElement("div",{className:"w-full max-w-sm rounded-2xl border border-border bg-popover p-5 space-y-4 shadow-xl text-popover-foreground"},
+A.createElement("div",{className:"space-y-1.5"},
+A.createElement("h3",{className:"text-base font-semibold m-0 text-foreground"},"Restart Required"),
+A.createElement("p",{className:"text-sm text-muted-foreground m-0 leading-relaxed"},restartMessage||"Restoration completed successfully. Would you like to restart the app now to apply all changes?")),
+A.createElement("div",{className:"flex items-center justify-end gap-2.5 pt-2"},
+A.createElement(tA,{variant:"secondary",size:"md",onClick:()=>setShowRestartPrompt(!1)},"Cancel"),
+A.createElement(tA,{variant:"primary",size:"md",onClick:()=>{
+setShowRestartPrompt(!1);
+try{if(window.Android&&typeof window.Android.restartApp==="function")window.Android.restartApp()}
+catch(_){}
+}},"OK")))),
 status&&A.createElement("div",{className:aj("p-3 rounded-xl border text-sm flex items-start gap-2.5 transition-all shadow-sm",
 status.success?"bg-emerald-500/10 border-emerald-500/30 text-emerald-300":
 status.type==="info"?"bg-sky-500/10 border-sky-500/30 text-sky-300":
@@ -9980,6 +10006,11 @@ A.createElement("div",null,
 A.createElement("h3",{className:"font-semibold text-base text-foreground m-0"},"Conversations & Trajectories"),
 A.createElement("p",{className:"text-xs text-muted-foreground mt-0.5 mb-0 leading-relaxed"},
 "Fast, compressed archive of conversation history, transcripts, and brain artifacts (.zip). Space-saving and complete."))),
+A.createElement("div",{className:"space-y-1.5 pt-1"},
+A.createElement("label",{className:"block text-xs font-medium text-muted-foreground"},"Target Conversation Scope:"),
+A.createElement("select",{value:selectedConversation,onChange:e=>setSelectedConversation(e.target.value),className:"w-full p-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"},
+A.createElement("option",{value:"all"},"All Conversations (Complete History)"),
+conversations.map(c=>A.createElement("option",{key:c.id||c,value:c.id||c},"Conversation: "+(c.title||c.id||c))))),
 A.createElement("div",{className:"flex flex-wrap gap-2.5 pt-1"},
 A.createElement(tA,{variant:"primary",size:"md",disabled:isProcessing,onClick:onBackupConvos,className:"flex items-center gap-1.5"},
 A.createElement(W,{name:"upload",size:16}),"Backup Conversations"),

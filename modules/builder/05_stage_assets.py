@@ -41,10 +41,15 @@ def stage_assets(staging_dir, no_bypass=False):
         def web_ignore(directory, files):
             ignored = set()
             rel_dir = os.path.relpath(directory, web_src)
+            for name in files:
+                if name.endswith((".pyc", ".map", ".md")) or name in ("__pycache__", ".DS_Store"):
+                    ignored.add(name)
             if rel_dir == ".":
-                for name in ("main.js", "src", "tests", "build.sh", "patch_main.py", "src.manifest"):
+                for name in ("main.js", "src", "tests", "build.sh", "patch_main.py", "src.manifest", "README.md"):
                     if name in files:
                         ignored.add(name)
+            elif rel_dir == "tests" or "tests" in rel_dir.split(os.sep):
+                ignored.update(files)
             return ignored
 
         shutil.copytree(web_src, web_dst, ignore=web_ignore)
