@@ -19,6 +19,8 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
+import android.widget.Toast;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -472,6 +474,94 @@ public class MainActivity extends Activity
     }
 
     public static final int REQUEST_DIR_CHOOSER = 2002;
+    public static final int REQUEST_BACKUP_CONVERSATIONS = 2003;
+    public static final int REQUEST_RESTORE_CONVERSATIONS = 2004;
+    public static final int REQUEST_BACKUP_PROJECTS = 2005;
+    public static final int REQUEST_RESTORE_PROJECTS = 2006;
+
+    private String pendingProjectBackupName = null;
+    private String pendingProjectRestoreTarget = null;
+
+    public void launchBackupConversationsPicker() {
+        try {
+            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("application/zip");
+            String dateStr = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(new java.util.Date());
+            intent.putExtra(Intent.EXTRA_TITLE, "antigravity-conversations-" + dateStr + ".zip");
+            startActivityForResult(intent, REQUEST_BACKUP_CONVERSATIONS);
+        } catch (Throwable t) {
+            Log.w(TAG, "Cannot launch backup conversations picker: " + t.getMessage());
+            notifyBackupRestoreStatus("backup_conversation", false, "Cannot launch file picker: " + t.getMessage(), null);
+        }
+    }
+
+    public void launchRestoreConversationsPicker() {
+        try {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("*/*");
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
+                    "application/zip", "application/x-zip-compressed", "application/octet-stream"
+            });
+            startActivityForResult(intent, REQUEST_RESTORE_CONVERSATIONS);
+        } catch (Throwable t) {
+            Log.w(TAG, "Cannot launch restore conversations picker: " + t.getMessage());
+            notifyBackupRestoreStatus("restore_conversation", false, "Cannot launch file picker: " + t.getMessage(), null);
+        }
+    }
+
+    public void launchBackupProjectsPicker(String projectName) {
+        try {
+            pendingProjectBackupName = projectName;
+            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("application/zip");
+            String base = (projectName != null && !projectName.trim().isEmpty() && !"all".equalsIgnoreCase(projectName.trim()))
+                    ? projectName.trim() : "antigravity-projects";
+            String dateStr = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(new java.util.Date());
+            intent.putExtra(Intent.EXTRA_TITLE, base + "-" + dateStr + ".zip");
+            startActivityForResult(intent, REQUEST_BACKUP_PROJECTS);
+        } catch (Throwable t) {
+            Log.w(TAG, "Cannot launch backup projects picker: " + t.getMessage());
+            notifyBackupRestoreStatus("backup_projects", false, "Cannot launch file picker: " + t.getMessage(), null);
+        }
+    }
+
+    public void launchRestoreProjectsPicker(String targetName) {
+        try {
+            pendingProjectRestoreTarget = targetName;
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("*/*");
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
+                    "application/zip", "application/x-zip-compressed", "application/octet-stream"
+            });
+            startActivityForResult(intent, REQUEST_RESTORE_PROJECTS);
+        } catch (Throwable t) {
+            Log.w(TAG, "Cannot launch restore projects picker: " + t.getMessage());
+            notifyBackupRestoreStatus("restore_projects", false, "Cannot launch file picker: " + t.getMessage(), null);
+        }
+    }
+
+    public void notifyBackupRestoreStatus(final String type, final boolean success, final String message, final JSONObject details) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Toast.makeText(MainActivity.this, message, success ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG).show();
+                    if (webViewHost != null && webViewHost.getWebView() != null) {
+                        JSONObject payload = details != null ? details : new JSONObject();
+                        payload.put("type", type);
+                        payload.put("success", success);
+                        payload.put("message", message);
+                        webViewHost.getWebView().evaluateJavascript(
+                                "window.__onBackupRestoreStatus && window.__onBackupRestoreStatus(" + payload.toString() + ");", null);
+                    }
+                } catch (Throwable ignored) {}
+            }
+        });
+    }
 
     public void launchDirectoryPicker() {
         try {
@@ -490,6 +580,86 @@ public class MainActivity extends Activity
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_BACKUP_CONVERSATIONS) {
+            if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+                notifyBackupRestoreStatus("backup_conversation", false, "Backup conversations cancelled", null);
+                return;
+            }
+            final Uri destUri = data.getData();
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject res = com.agy.util.BackupRestoreHelper.backupConversations(MainActivity.this, destUri);
+                    boolean ok = res.optBoolean("success", false);
+                    String msg = ok ? res.optString("message", "Conversations backup completed")
+                                    : res.optString("error", "Backup failed");
+                    notifyBackupRestoreStatus("backup_conversation", ok, msg, res);
+                }
+            }).start();
+            return;
+        }
+
+        if (requestCode == REQUEST_RESTORE_CONVERSATIONS) {
+            if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+                notifyBackupRestoreStatus("restore_conversation", false, "Restore conversations cancelled", null);
+                return;
+            }
+            final Uri srcUri = data.getData();
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject res = com.agy.util.BackupRestoreHelper.restoreConversations(MainActivity.this, srcUri);
+                    boolean ok = res.optBoolean("success", false);
+                    String msg = ok ? res.optString("message", "Conversations restored successfully")
+                                    : res.optString("error", "Restore failed");
+                    notifyBackupRestoreStatus("restore_conversation", ok, msg, res);
+                }
+            }).start();
+            return;
+        }
+
+        if (requestCode == REQUEST_BACKUP_PROJECTS) {
+            if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+                notifyBackupRestoreStatus("backup_projects", false, "Backup projects cancelled", null);
+                return;
+            }
+            final Uri destUri = data.getData();
+            final String projName = pendingProjectBackupName;
+            pendingProjectBackupName = null;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject res = com.agy.util.BackupRestoreHelper.backupProjects(MainActivity.this, projName, destUri);
+                    boolean ok = res.optBoolean("success", false);
+                    String msg = ok ? res.optString("message", "Projects backup completed")
+                                    : res.optString("error", "Backup failed");
+                    notifyBackupRestoreStatus("backup_projects", ok, msg, res);
+                }
+            }).start();
+            return;
+        }
+
+        if (requestCode == REQUEST_RESTORE_PROJECTS) {
+            if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+                notifyBackupRestoreStatus("restore_projects", false, "Restore projects cancelled", null);
+                return;
+            }
+            final Uri srcUri = data.getData();
+            final String target = pendingProjectRestoreTarget;
+            pendingProjectRestoreTarget = null;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject res = com.agy.util.BackupRestoreHelper.restoreProjects(MainActivity.this, target, srcUri);
+                    boolean ok = res.optBoolean("success", false);
+                    String msg = ok ? res.optString("message", "Projects restored successfully")
+                                    : res.optString("error", "Restore failed");
+                    notifyBackupRestoreStatus("restore_projects", ok, msg, res);
+                }
+            }).start();
+            return;
+        }
+
         if (requestCode == REQUEST_DIR_CHOOSER) {
             String realPath = null;
             if (resultCode == RESULT_OK && data != null && data.getData() != null) {

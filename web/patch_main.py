@@ -415,6 +415,165 @@ def patch_full_text_conversation_search(content):
     return content, True
 
 
+def patch_backup_restore(content):
+    if "BackupRestoreScreen" in content:
+        print("[web-patch] Backup and Restore already patched in main.js")
+        return content, True
+
+    # 1. Update Gtb map to include BackupRestore
+    gtb_target = 'ProvideFeedback:"Provide Feedback",'
+    gtb_injected = 'ProvideFeedback:"Provide Feedback",BackupRestore:"Backup and Restore",'
+    if gtb_target in content:
+        content = content.replace(gtb_target, gtb_injected, 1)
+        print("[web-patch] Added BackupRestore to Gtb mapping")
+
+    # 2. Add Backup and Restore to mobile settings list in jNb
+    jnb_target = '(b.hideProvideFeedback?[]:["Provide Feedback"])'
+    jnb_injected = '(b.hideProvideFeedback?[]:["Provide Feedback"]),"Backup and Restore"'
+    if jnb_target in content:
+        content = content.replace(jnb_target, jnb_injected, 1)
+        print("[web-patch] Added Backup and Restore to jNb mobile settings screen list")
+
+    # 3. Add Backup and Restore to desktop settings sidebar
+    sidebar_target = '!f.hideProvideFeedback&&A.createElement(Q3,{text:"Provide Feedback",onClick:()=>{D(qX("Provide Feedback"))},isActive:E&&c==="Provide Feedback"})'
+    sidebar_injected = (
+        '!f.hideProvideFeedback&&A.createElement(Q3,{text:"Provide Feedback",onClick:()=>{D(qX("Provide Feedback"))},isActive:E&&c==="Provide Feedback"}),'
+        'A.createElement(Q3,{text:"Backup and Restore",onClick:()=>{D(qX("Backup and Restore"))},isActive:E&&c==="Backup and Restore"})'
+    )
+    if sidebar_target in content:
+        content = content.replace(sidebar_target, sidebar_injected, 1)
+        print("[web-patch] Added Backup and Restore to desktop sidebar")
+
+    # 4. Add Backup and Restore to fNb switcher (mobile)
+    fnb_target = 'case "Provide Feedback":return A.createElement(H_,null);'
+    fnb_injected = (
+        'case "Provide Feedback":return A.createElement(H_,null);'
+        'case "Backup and Restore":return A.createElement(BackupRestoreScreen,null);'
+    )
+    if fnb_target in content:
+        content = content.replace(fnb_target, fnb_injected, 1)
+        print("[web-patch] Added Backup and Restore to fNb screen switcher")
+
+    # 5. Add Backup and Restore to desktop screen view container
+    view_target = 'A.createElement("div",{style:{display:b==="Provide Feedback"?"block":"none"}},A.createElement(H_,null)),'
+    view_injected = (
+        'A.createElement("div",{style:{display:b==="Provide Feedback"?"block":"none"}},A.createElement(H_,null)),'
+        'A.createElement("div",{style:{display:b==="Backup and Restore"?"block":"none"}},A.createElement(BackupRestoreScreen,null)),'
+    )
+    if view_target in content:
+        content = content.replace(view_target, view_injected, 1)
+        print("[web-patch] Added Backup and Restore to desktop view container")
+
+    # 6. Define BackupRestoreScreen component before H_
+    h_target = 'var H_=()=>'
+    backup_restore_comp = (
+        'var BackupRestoreScreen=()=>{\n'
+        'var [status,setStatus]=(0,A.useState)(null);\n'
+        'var [isProcessing,setIsProcessing]=(0,A.useState)(!1);\n'
+        'var [projects,setProjects]=(0,A.useState)([]);\n'
+        'var [selectedProject,setSelectedProject]=(0,A.useState)("all");\n'
+        '(0,A.useEffect)(()=>{\n'
+        'try{\n'
+        'if(typeof window!=="undefined"&&window.Android&&typeof window.Android.listProjects==="function"){\n'
+        'var pList=JSON.parse(window.Android.listProjects()||"[]");\n'
+        'if(Array.isArray(pList))setProjects(pList);\n'
+        '}\n'
+        '}catch(_){}\n'
+        'if(typeof window!=="undefined"){\n'
+        'window.__onBackupRestoreStatus=function(res){\n'
+        'setIsProcessing(!1);\n'
+        'if(typeof res==="string"){try{res=JSON.parse(res)}catch(_){res={message:res}}}\n'
+        'setStatus(res);\n'
+        '};\n'
+        'return function(){\n'
+        'if(typeof window!=="undefined")window.__onBackupRestoreStatus=null;\n'
+        '};\n'
+        '}\n'
+        '},[]);\n'
+        'var onBackupConvos=()=>{\n'
+        'setIsProcessing(!0);\n'
+        'setStatus({type:"info",message:"Opening file picker to choose backup location..."});\n'
+        'try{\n'
+        'if(window.Android&&typeof window.Android.backupConversations==="function")window.Android.backupConversations();\n'
+        'else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}\n'
+        '}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}\n'
+        '};\n'
+        'var onRestoreConvos=()=>{\n'
+        'setIsProcessing(!0);\n'
+        'setStatus({type:"info",message:"Opening file picker to select backup archive..."});\n'
+        'try{\n'
+        'if(window.Android&&typeof window.Android.restoreConversations==="function")window.Android.restoreConversations();\n'
+        'else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}\n'
+        '}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}\n'
+        '};\n'
+        'var onBackupProj=()=>{\n'
+        'setIsProcessing(!0);\n'
+        'setStatus({type:"info",message:"Opening file picker to save project ZIP..."});\n'
+        'try{\n'
+        'if(window.Android&&typeof window.Android.backupProjects==="function")window.Android.backupProjects(selectedProject);\n'
+        'else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}\n'
+        '}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}\n'
+        '};\n'
+        'var onRestoreProj=()=>{\n'
+        'setIsProcessing(!0);\n'
+        'setStatus({type:"info",message:"Opening file picker to select project ZIP..."});\n'
+        'try{\n'
+        'if(window.Android&&typeof window.Android.restoreProjects==="function")window.Android.restoreProjects(selectedProject!=="all"?selectedProject:"");\n'
+        'else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}\n'
+        '}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}\n'
+        '};\n'
+        'return A.createElement(G_,{title:"Backup and Restore"},\n'
+        'A.createElement("div",{className:"space-y-6 max-w-2xl pb-8 p-1"},\n'
+        'status&&A.createElement("div",{className:aj("p-3 rounded-xl border text-sm flex items-start gap-2.5 transition-all shadow-sm",\n'
+        'status.success?"bg-emerald-500/10 border-emerald-500/30 text-emerald-300":\n'
+        'status.type==="info"?"bg-sky-500/10 border-sky-500/30 text-sky-300":\n'
+        '"bg-red-500/10 border-red-500/30 text-red-300")},\n'
+        'A.createElement(W,{name:status.success?"check_circle":status.type==="info"?"info":"error",size:18,className:"shrink-0 mt-0.5"}),\n'
+        'A.createElement("div",{className:"flex-1"},A.createElement("div",{className:"font-medium"},status.title||(status.success?"Success":status.type==="info"?"Processing":"Notice")),status.message&&A.createElement("div",{className:"text-xs opacity-90 mt-0.5"},status.message)),\n'
+        'A.createElement("button",{type:"button",onClick:()=>setStatus(null),className:"text-xs opacity-60 hover:opacity-100 p-1 border-none bg-transparent cursor-pointer text-inherit"},"✕")),\n'
+        'A.createElement("div",{className:"rounded-2xl border border-border bg-sidebar-muted/20 p-4 space-y-3.5 shadow-xs"},\n'
+        'A.createElement("div",{className:"flex items-center gap-3"},\n'
+        'A.createElement("div",{className:"p-2.5 rounded-xl bg-primary/10 text-primary flex items-center justify-center"},\n'
+        'A.createElement(W,{name:"forum",size:22})),\n'
+        'A.createElement("div",null,\n'
+        'A.createElement("h3",{className:"font-semibold text-base text-foreground m-0"},"Conversations & Trajectories"),\n'
+        'A.createElement("p",{className:"text-xs text-muted-foreground mt-0.5 mb-0 leading-relaxed"},\n'
+        '"Fast, compressed archive of conversation history, transcripts, and brain artifacts (.zip). Space-saving and complete."))),\n'
+        'A.createElement("div",{className:"flex flex-wrap gap-2.5 pt-1"},\n'
+        'A.createElement(tA,{variant:"primary",size:"md",disabled:isProcessing,onClick:onBackupConvos,className:"flex items-center gap-1.5"},\n'
+        'A.createElement(W,{name:"upload",size:16}),"Backup Conversations"),\n'
+        'A.createElement(tA,{variant:"secondary",size:"md",disabled:isProcessing,onClick:onRestoreConvos,className:"flex items-center gap-1.5"},\n'
+        'A.createElement(W,{name:"download",size:16}),"Restore Conversations"))),\n'
+        'A.createElement("div",{className:"rounded-2xl border border-border bg-sidebar-muted/20 p-4 space-y-3.5 shadow-xs"},\n'
+        'A.createElement("div",{className:"flex items-center gap-3"},\n'
+        'A.createElement("div",{className:"p-2.5 rounded-xl bg-primary/10 text-primary flex items-center justify-center"},\n'
+        'A.createElement(W,{name:"folder_zip",size:22})),\n'
+        'A.createElement("div",null,\n'
+        'A.createElement("h3",{className:"font-semibold text-base text-foreground m-0"},"Project Files"),\n'
+        'A.createElement("p",{className:"text-xs text-muted-foreground mt-0.5 mb-0 leading-relaxed"},\n'
+        '"Backup and restore workspace projects as standard ZIP archives."))),\n'
+        'A.createElement("div",{className:"space-y-1.5 pt-1"},\n'
+        'A.createElement("label",{className:"block text-xs font-medium text-muted-foreground"},"Target Project Scope:"),\n'
+        'A.createElement("select",{value:selectedProject,onChange:e=>setSelectedProject(e.target.value),className:"w-full p-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"},\n'
+        'A.createElement("option",{value:"all"},"All Scratch Projects (Complete Workspace)"),\n'
+        'projects.map(p=>A.createElement("option",{key:p,value:p},"Project: "+p)))),\n'
+        'A.createElement("div",{className:"flex flex-wrap gap-2.5 pt-1"},\n'
+        'A.createElement(tA,{variant:"primary",size:"md",disabled:isProcessing,onClick:onBackupProj,className:"flex items-center gap-1.5"},\n'
+        'A.createElement(W,{name:"upload",size:16}),"Backup Projects (.zip)"),\n'
+        'A.createElement(tA,{variant:"secondary",size:"md",disabled:isProcessing,onClick:onRestoreProj,className:"flex items-center gap-1.5"},\n'
+        'A.createElement(W,{name:"download",size:16}),"Restore Projects (.zip)")))\n'
+        '));\n};\n'
+    )
+    if h_target in content:
+        content = content.replace(h_target, backup_restore_comp + h_target, 1)
+        print("[web-patch] Successfully injected BackupRestoreScreen component before H_")
+    else:
+        print("[web-patch] H_ target not found in main.js", file=sys.stderr)
+        return content, False
+
+    return content, True
+
+
 def patch_main(file_path):
     if not os.path.isfile(file_path):
         print(f"[web-patch] file not found: {file_path}", file=sys.stderr)
@@ -449,6 +608,10 @@ def patch_main(file_path):
 
     content, ok_fts = patch_full_text_conversation_search(content)
     if not ok_fts:
+        return False
+
+    content, ok_br = patch_backup_restore(content)
+    if not ok_br:
         return False
 
     with open(file_path, "w", encoding="utf-8") as f:
