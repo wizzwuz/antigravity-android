@@ -70,8 +70,19 @@ public final class CoreEnvironment {
         env.put("XDG_DATA_DIRS", rm.getRuntimeDir().getAbsolutePath());
         env.put("XDG_DATA_HOME", new File(files, ".local/share").getAbsolutePath());
         env.put("XDG_CONFIG_HOME", new File(files, ".config").getAbsolutePath());
-        // The glibc loader resolves libraries via --library-path; keep bionic's out of the way.
-        env.remove("LD_LIBRARY_PATH");
+        // The glibc core uses its own --library-path argument and ignores LD_LIBRARY_PATH.
+        // However, Bionic-linked PTY shells (bash, python, etc.) compiled against the
+        // bootstrap prefix have RUNPATH baked to /data/data/com.termux/files/usr/lib.
+        // On non-Termux devices that path doesn't exist, so libandroid-support.so and
+        // other prefix libs are not found. Set LD_LIBRARY_PATH so Bionic finds them.
+        File prefixLib = new File(prefix, "lib");
+        String existingLdLibPath = env.get("LD_LIBRARY_PATH");
+        String prefixLibPath = prefixLib.getAbsolutePath();
+        if (existingLdLibPath == null || existingLdLibPath.isEmpty()) {
+            env.put("LD_LIBRARY_PATH", prefixLibPath);
+        } else if (!existingLdLibPath.contains(prefixLibPath)) {
+            env.put("LD_LIBRARY_PATH", prefixLibPath + ":" + existingLdLibPath);
+        }
         // Do NOT export LD_PRELOAD into the process environment!
         // liblse_compat.so is a GLIBC library; exporting it in env causes Bionic's
         // dynamic linker to crash when executing /system/bin/sh (xdg-open, bridges, termux).
