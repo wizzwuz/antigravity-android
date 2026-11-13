@@ -605,6 +605,47 @@ def patch_backup_restore(content):
     return content, True
 
 
+def patch_terminal_touch_scroll(content):
+    # 1. Update CK(a) drawer swipe ignore check to include terminal selectors
+    ck_target = 'function CK(a){return!!a?.closest("[data-base-ui-swipe-ignore]")}'
+    ck_replacement = (
+        'function CK(a){return!!a?.closest("[data-base-ui-swipe-ignore],[data-swipe-ignore],'
+        '.xterm,[data-testid=\\"terminal-surface\\"],[data-testid=\\"terminal-view\\"],'
+        '.terminal,.xterm-scrollable-element")}'
+    )
+    if ck_target in content:
+        content = content.replace(ck_target, ck_replacement, 1)
+        print("[web-patch] Successfully patched CK(a) swipe ignore for terminal")
+    else:
+        print("[web-patch] CK(a) swipe ignore target not found in main.js", file=sys.stderr)
+        return content, False
+
+    # 2. Update pointer down swipe check in drawer drag listener
+    swipe_target_2 = "if(!Ma||!Ma.closest('button,a,input,textarea,[role=\"button\"],[data-base-ui-swipe-ignore],[data-swipe-ignore]'))"
+    swipe_replacement_2 = (
+        "if(!Ma||!Ma.closest('button,a,input,textarea,[role=\"button\"],[data-base-ui-swipe-ignore],[data-swipe-ignore],"
+        ".xterm,[data-testid=\"terminal-surface\"],[data-testid=\"terminal-view\"],.terminal,.xterm-scrollable-element'))"
+    )
+    if swipe_target_2 in content:
+        content = content.replace(swipe_target_2, swipe_replacement_2, 1)
+        print("[web-patch] Successfully patched secondary drawer swipe check for terminal")
+    else:
+        print("[web-patch] Secondary drawer swipe check not found in main.js", file=sys.stderr)
+        return content, False
+
+    # 3. Add swipe ignore and touch scroll attributes to terminal-surface
+    surface_target = 'A.createElement("div",{"data-testid":"terminal-surface",className:"w-full h-full relative overflow-hidden"'
+    surface_replacement = 'A.createElement("div",{"data-testid":"terminal-surface","data-base-ui-swipe-ignore":"","data-swipe-ignore":"","data-terminal-touch-scroll":"1",className:"w-full h-full relative overflow-hidden"'
+    if surface_target in content:
+        content = content.replace(surface_target, surface_replacement, 1)
+        print("[web-patch] Successfully patched terminal-surface with swipe-ignore attributes")
+    else:
+        print("[web-patch] terminal-surface target not found in main.js", file=sys.stderr)
+        return content, False
+
+    return content, True
+
+
 def patch_main(file_path):
     if not os.path.isfile(file_path):
         print(f"[web-patch] file not found: {file_path}", file=sys.stderr)
@@ -643,6 +684,10 @@ def patch_main(file_path):
 
     content, ok_br = patch_backup_restore(content)
     if not ok_br:
+        return False
+
+    content, ok_term = patch_terminal_touch_scroll(content)
+    if not ok_term:
         return False
 
     with open(file_path, "w", encoding="utf-8") as f:
