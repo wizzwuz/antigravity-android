@@ -31,7 +31,16 @@ public final class NetworkConfigWriter {
         for (String ip : DnsCollector.collectDnsServers(appContext)) {
             resolv.append("nameserver ").append(ip).append('\n');
         }
+        String hostsContent = "127.0.0.1 localhost\n" +
+                "127.0.0.1 localhost.localdomain\n" +
+                "::1 localhost ip6-localhost ip6-loopback\n";
         AtomicFileWriter.writeText(new File(etc, "resolv.conf"), resolv.toString());
-        AtomicFileWriter.writeText(new File(etc, "hosts"), "127.0.0.1 localhost\n");
+        AtomicFileWriter.writeText(new File(etc, "hosts"), hostsContent);
+
+        File rtEtc = new File(new File(appContext.getFilesDir(), "runtime"), "etc");
+        if (rtEtc.isDirectory()) {
+            AtomicFileWriter.writeText(new File(rtEtc, "resolv.conf"), resolv.toString());
+            AtomicFileWriter.writeText(new File(rtEtc, "hosts"), hostsContent);
+        }
     }
 }

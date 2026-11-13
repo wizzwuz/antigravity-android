@@ -1,5 +1,7 @@
 """
-resolv_redirect.py - Relative resolver path patch: /etc/resolv.conf -> etc//resolv.conf (length 16 in-place).
+resolv_redirect.py - Relative resolver path patch:
+  /etc/resolv.conf -> etc//resolv.conf (length 16 in-place).
+  /etc/hosts       -> etc//hosts       (length 10 in-place).
 """
 from typing import Tuple, Dict, Any, List, Union
 
@@ -7,6 +9,9 @@ TARGET = b"/etc/resolv.conf"
 REPLACEMENT = b"etc//resolv.conf"
 ADJACENT_REJECT = b"/.\\"
 EXPECTED_COUNT = 2
+
+HOSTS_TARGET = b"/etc/hosts"
+HOSTS_REPLACEMENT = b"etc//hosts"
 
 def scan(data: Union[bytes, bytearray, memoryview]) -> Tuple[List[int], List[int], List[int]]:
     clean = []
@@ -33,8 +38,29 @@ def scan(data: Union[bytes, bytearray, memoryview]) -> Tuple[List[int], List[int
         pos += len(REPLACEMENT)
     return clean, rejected, repl
 
+def scan_hosts(data: Union[bytes, bytearray, memoryview]) -> Tuple[List[int], List[int]]:
+    clean = []
+    pos = 0
+    while True:
+        pos = data.find(HOSTS_TARGET, pos)
+        if pos < 0:
+            break
+        clean.append(pos)
+        pos += len(HOSTS_TARGET)
+
+    repl = []
+    pos = 0
+    while True:
+        pos = data.find(HOSTS_REPLACEMENT, pos)
+        if pos < 0:
+            break
+        repl.append(pos)
+        pos += len(HOSTS_REPLACEMENT)
+    return clean, repl
+
 def apply(data: bytearray, verify: bool = False, dry_run: bool = False, allow_missing: bool = False) -> Tuple[bool, Dict[str, Any]]:
     clean, rejected, repl = scan(data)
+    clean_hosts, repl_hosts = scan_hosts(data)
     total = len(clean) + len(repl)
 
     info = {
@@ -44,7 +70,9 @@ def apply(data: bytearray, verify: bool = False, dry_run: bool = False, allow_mi
         "rejected_count": len(rejected),
         "replacement_count": len(repl),
         "clean_offsets": [hex(x) for x in clean],
-        "replacement_offsets": [hex(x) for x in repl]
+        "replacement_offsets": [hex(x) for x in repl],
+        "clean_hosts_count": len(clean_hosts),
+        "replacement_hosts_count": len(repl_hosts)
     }
 
     if total == 0:
@@ -59,17 +87,19 @@ def apply(data: bytearray, verify: bool = False, dry_run: bool = False, allow_mi
         return False, info
 
     if verify:
-        ok = (len(clean) == 0 and len(repl) == EXPECTED_COUNT)
+        ok = (len(clean) == 0 and len(repl) == EXPECTED_COUNT and len(clean_hosts) == 0)
         info["status"] = "verified" if ok else "unverified"
         return ok, info
 
-    if len(clean) == 0:
+    if len(clean) == 0 and len(clean_hosts) == 0:
         info["status"] = "already_patched"
         return True, info
 
     if not dry_run:
         for pos in clean:
             data[pos:pos + len(REPLACEMENT)] = REPLACEMENT
+        for pos in clean_hosts:
+            data[pos:pos + len(HOSTS_REPLACEMENT)] = HOSTS_REPLACEMENT
         info["status"] = "patched"
     else:
         info["status"] = "dry_run"
