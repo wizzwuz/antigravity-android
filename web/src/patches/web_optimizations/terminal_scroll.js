@@ -107,7 +107,7 @@ function installTerminalTouchScroll(global, doc) {
             bubbles: true,
             cancelable: true,
             view: global,
-            deltaY: dy * 2.5,
+            deltaY: -dy * 2.5,
             deltaMode: 0
           });
 
