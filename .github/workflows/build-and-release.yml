@@ -63,8 +63,11 @@ jobs:
         run: |
           mkdir -p tools
           
-          # 1. Generate debug keystore if absent
-          if [ ! -f "tools/debug.keystore" ]; then
+          # 1. Setup consistent signing keystore
+          if [ -n "${{ secrets.AGY_RELEASE_KEYSTORE_B64 }}" ]; then
+            echo "[CI] Restoring release keystore from AGY_RELEASE_KEYSTORE_B64 secret..."
+            printf '%s' "${{ secrets.AGY_RELEASE_KEYSTORE_B64 }}" | base64 --decode > tools/debug.keystore
+          elif [ ! -f "tools/debug.keystore" ]; then
             echo "[CI] Generating debug keystore..."
             keytool -genkey -v -keystore tools/debug.keystore \
               -storepass android -alias androiddebugkey -keypass android \
@@ -73,6 +76,8 @@ jobs:
           fi
           mkdir -p "$HOME/.android"
           cp -f tools/debug.keystore "$HOME/.android/debug.keystore"
+          echo "[CI] Active signing certificate fingerprint:"
+          keytool -list -v -keystore tools/debug.keystore -storepass android | grep -E "Owner:|SHA256:" || true
 
           # 2. Setup Android API 28 android.jar if absent
           if [ ! -f "tools/android.jar" ]; then

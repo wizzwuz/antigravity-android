@@ -30,6 +30,7 @@ Thumbs.db
 
 # Sensitive credentials & keystores (NEVER commit signing keys)
 *.keystore
+!tools/debug.keystore
 *.jks
 *.p12
 *.pfx
