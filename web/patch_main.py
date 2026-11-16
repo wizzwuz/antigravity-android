@@ -22,6 +22,8 @@ def must_replace(content, old, new, label):
     return content.replace(old, new, 1)
 
 
+OLD_MP_BLOCK_V3 = 'searchMarketplace:async u=>{typeof window!=="undefined"&&!window.__agMpSmartV3&&(window.__agMpSmartV3=!0,window.__agLoadMarketplaceCatalog=()=>{if(window.__agMpCatalog)return Promise.resolve(window.__agMpCatalog);if(window.__agMpCatalogPromise)return window.__agMpCatalogPromise;window.__agMpCatalogPromise=(async()=>{var base={featured:[],search:{customizations:[],groups:[]},details:{}};try{var r=await fetch("/marketplace_catalog.json");if(r.ok)base=await r.json()}catch(_e){}try{var ac=typeof AbortController!=="undefined"?new AbortController:null,tid=ac?setTimeout(()=>ac.abort(),3500):null,r2=await fetch("https://raw.githubusercontent.com/Yhoanes/antigravity-android-plugins/main/catalog.json",ac?{signal:ac.signal}:void 0);tid&&clearTimeout(tid);if(r2.ok){var rem=await r2.json();if(rem&&typeof rem==="object"){var rc=(rem.search&&rem.search.customizations)||[],bc=(base.search&&base.search.customizations)||[],rIds=new Set(rc.map(x=>x.id)),mc=rc.map(x=>Object.assign({_androidNative:!0},x)).concat(bc.filter(x=>!rIds.has(x.id))),rg2=(rem.search&&rem.search.groups)||[],bg=(base.search&&base.search.groups)||[],rgIds=new Set(rg2.map(x=>x.id)),mg=rg2.concat(bg.filter(x=>!rgIds.has(x.id))),bf=(base.featured||[]).filter(x=>x.id!=="android-featured-hero");base={schema:1,featured:bf,search:{customizations:mc,groups:mg},details:Object.assign({},base.details||{},rem.details||{})}}}}catch(_e2){}window.__agMpCatalog=base;return base})();return window.__agMpCatalogPromise});var _SMR=Fja.file.messages.find(m=>m.name==="SearchMarketplaceResponse")||Fja.file.messages[532],_q=(u.query??"").trim().toLowerCase(),_gid=u.groupId??"",_pt=u.pageToken??"";var [_cat,_sr]=await Promise.all([window.__agLoadMarketplaceCatalog().catch(()=>null),_gid==="built-for-android"?Promise.resolve(null):f(v=>v.searchMarketplace(Vb(Fja,{query:u.query??"",groupId:_gid,pageToken:_pt}))).catch(()=>null)]);try{var _allCat=(_cat&&_cat.search&&_cat.search.customizations)||[],_allGrps=(_cat&&_cat.search&&_cat.search.groups)||[],_hasLive=!!(_sr&&_sr.customizations&&_sr.customizations.length>0);if(_pt&&_hasLive){var _natRaw=_allCat.filter(x=>x._androidNative);if(_natRaw.length>0){var _natMsg=ef(_SMR,{customizations:_natRaw,groups:[]},{ignoreUnknownFields:!0}),_nm=new Map((_natMsg.customizations||[]).map(x=>[x.id,x]));_sr.customizations=_sr.customizations.map(x=>_nm.get(x.id)||x)}return _sr}var _srcItems=_hasLive?_allCat.filter(x=>x._androidNative):_allCat,_srcGrps=_hasLive?_allGrps.filter(x=>x.id==="built-for-android"||x._androidNative):_allGrps;if(_gid){var _g=_allGrps.find(x=>x.id===_gid);_srcItems=_g?_srcItems.filter(x=>_g.memberIds&&_g.memberIds.includes(x.id)):[]}if(_q){_srcItems=_srcItems.filter(x=>(x.displayName||"").toLowerCase().includes(_q)||(x.id||"").toLowerCase().includes(_q)||(x.description||"").toLowerCase().includes(_q))}var _localMsg=ef(_SMR,{customizations:_srcItems,groups:_q||_gid?[]:_srcGrps},{ignoreUnknownFields:!0});if(_hasLive){var _fullNatMsg=ef(_SMR,{customizations:_allCat.filter(x=>x._androidNative),groups:[]},{ignoreUnknownFields:!0}),_natById=new Map((_fullNatMsg.customizations||[]).map(x=>[x.id,x])),_seen=new Set((_localMsg.customizations||[]).map(x=>x.id)),_merged=(_localMsg.customizations||[]).slice();for(var _it of _sr.customizations){var _rep=_natById.get(_it.id)||_it;if(!_seen.has(_rep.id)){_seen.add(_rep.id);_merged.push(_rep)}}var _gSeen=new Set((_localMsg.groups||[]).map(x=>x.id)),_mGrps=_q||_gid?[]:(_localMsg.groups||[]).slice();if(!_q&&!_gid&&_sr.groups){for(var _gp of _sr.groups){if(!_gSeen.has(_gp.id)){_gSeen.add(_gp.id);_mGrps.push(_gp)}}}_localMsg.customizations=_merged;_localMsg.groups=_mGrps;_localMsg.nextPageToken=_sr.nextPageToken||""}return _localMsg}catch(_e2){return _sr||ef(_SMR,{customizations:[],groups:[]},{ignoreUnknownFields:!0})}},getMarketplaceCustomization:async u=>{typeof window!=="undefined"&&!window.__agMpSmartV3&&(window.__agMpSmartV3=!0,window.__agLoadMarketplaceCatalog=()=>{if(window.__agMpCatalog)return Promise.resolve(window.__agMpCatalog);if(window.__agMpCatalogPromise)return window.__agMpCatalogPromise;window.__agMpCatalogPromise=(async()=>{var base={featured:[],search:{customizations:[],groups:[]},details:{}};try{var r=await fetch("/marketplace_catalog.json");if(r.ok)base=await r.json()}catch(_e){}try{var ac=typeof AbortController!=="undefined"?new AbortController:null,tid=ac?setTimeout(()=>ac.abort(),3500):null,r2=await fetch("https://raw.githubusercontent.com/Yhoanes/antigravity-android-plugins/main/catalog.json",ac?{signal:ac.signal}:void 0);tid&&clearTimeout(tid);if(r2.ok){var rem=await r2.json();if(rem&&typeof rem==="object"){var rc=(rem.search&&rem.search.customizations)||[],bc=(base.search&&base.search.customizations)||[],rIds=new Set(rc.map(x=>x.id)),mc=rc.map(x=>Object.assign({_androidNative:!0},x)).concat(bc.filter(x=>!rIds.has(x.id))),rg2=(rem.search&&rem.search.groups)||[],bg=(base.search&&base.search.groups)||[],rgIds=new Set(rg2.map(x=>x.id)),mg=rg2.concat(bg.filter(x=>!rgIds.has(x.id))),bf=(base.featured||[]).filter(x=>x.id!=="android-featured-hero");base={schema:1,featured:bf,search:{customizations:mc,groups:mg},details:Object.assign({},base.details||{},rem.details||{})}}}}catch(_e2){}window.__agMpCatalog=base;return base})();return window.__agMpCatalogPromise});var _GCR=Ija.file.messages.find(m=>m.name==="GetMarketplaceCustomizationResponse")||Ija.file.messages[534],_cat=await window.__agLoadMarketplaceCatalog().catch(()=>null),_localItem=((_cat&&_cat.search&&_cat.search.customizations)||[]).find(x=>x.id===u.id),_localDet=(_cat&&_cat.details&&_cat.details[u.id])||(_localItem?{customization:_localItem}:null);if((_localItem&&_localItem._androidNative)||(_localDet&&_localDet.customization&&_localDet.customization._androidNative)){return ef(_GCR,_localDet,{ignoreUnknownFields:!0})}try{var _gr=await f(v=>v.getMarketplaceCustomization(Vb(Ija,{id:u.id,includePreview:u.includePreview??!1})));if(_gr&&_gr.customization)return _gr}catch(_e){}return ef(_GCR,_localDet||{},{ignoreUnknownFields:!0})},getMarketplaceBundles:async u=>{var _GBR=Eja.file.messages.find(m=>m.name==="GetMarketplaceBundlesResponse")||Eja.file.messages[511];try{return await f(v=>v.getMarketplaceBundles(Vb(Eja,{ids:u.ids??[]})))}catch(_e){return ef(_GBR,{bundles:[],customizations:[]},{ignoreUnknownFields:!0})}},getMarketplaceFeatured:async()=>{typeof window!=="undefined"&&!window.__agMpSmartV3&&(window.__agMpSmartV3=!0,window.__agLoadMarketplaceCatalog=()=>{if(window.__agMpCatalog)return Promise.resolve(window.__agMpCatalog);if(window.__agMpCatalogPromise)return window.__agMpCatalogPromise;window.__agMpCatalogPromise=(async()=>{var base={featured:[],search:{customizations:[],groups:[]},details:{}};try{var r=await fetch("/marketplace_catalog.json");if(r.ok)base=await r.json()}catch(_e){}try{var ac=typeof AbortController!=="undefined"?new AbortController:null,tid=ac?setTimeout(()=>ac.abort(),3500):null,r2=await fetch("https://raw.githubusercontent.com/Yhoanes/antigravity-android-plugins/main/catalog.json",ac?{signal:ac.signal}:void 0);tid&&clearTimeout(tid);if(r2.ok){var rem=await r2.json();if(rem&&typeof rem==="object"){var rc=(rem.search&&rem.search.customizations)||[],bc=(base.search&&base.search.customizations)||[],rIds=new Set(rc.map(x=>x.id)),mc=rc.map(x=>Object.assign({_androidNative:!0},x)).concat(bc.filter(x=>!rIds.has(x.id))),rg2=(rem.search&&rem.search.groups)||[],bg=(base.search&&base.search.groups)||[],rgIds=new Set(rg2.map(x=>x.id)),mg=rg2.concat(bg.filter(x=>!rgIds.has(x.id))),bf=(base.featured||[]).filter(x=>x.id!=="android-featured-hero");base={schema:1,featured:bf,search:{customizations:mc,groups:mg},details:Object.assign({},base.details||{},rem.details||{})}}}}catch(_e2){}window.__agMpCatalog=base;return base})();return window.__agMpCatalogPromise});var _GFR=Gja.file.messages.find(m=>m.name==="GetMarketplaceFeaturedResponse")||Gja.file.messages[525];try{var _fr=await f(u=>u.getMarketplaceFeatured(Vb(Gja,{})));if(_fr&&_fr.featured&&_fr.featured.length>0)return _fr}catch(_e){}try{var _cat=await window.__agLoadMarketplaceCatalog();return ef(_GFR,{featured:((_cat&&_cat.featured)||[]).filter(x=>x.id!=="android-featured-hero"),customizations:(_cat&&_cat.search&&_cat.search.customizations)||[]},{ignoreUnknownFields:!0})}catch(_e2){return ef(_GFR,{featured:[],customizations:[]},{ignoreUnknownFields:!0})}},getOnboardingPersonas:async()=>f(u=>u.getOnboardingPersonas(Vb(Hja,{}))),installCustomization:async u=>{typeof window!=="undefined"&&!window.__agMpSmartV3&&(window.__agMpSmartV3=!0,window.__agLoadMarketplaceCatalog=()=>{if(window.__agMpCatalog)return Promise.resolve(window.__agMpCatalog);if(window.__agMpCatalogPromise)return window.__agMpCatalogPromise;window.__agMpCatalogPromise=(async()=>{var base={featured:[],search:{customizations:[],groups:[]},details:{}};try{var r=await fetch("/marketplace_catalog.json");if(r.ok)base=await r.json()}catch(_e){}try{var ac=typeof AbortController!=="undefined"?new AbortController:null,tid=ac?setTimeout(()=>ac.abort(),3500):null,r2=await fetch("https://raw.githubusercontent.com/Yhoanes/antigravity-android-plugins/main/catalog.json",ac?{signal:ac.signal}:void 0);tid&&clearTimeout(tid);if(r2.ok){var rem=await r2.json();if(rem&&typeof rem==="object"){var rc=(rem.search&&rem.search.customizations)||[],bc=(base.search&&base.search.customizations)||[],rIds=new Set(rc.map(x=>x.id)),mc=rc.map(x=>Object.assign({_androidNative:!0},x)).concat(bc.filter(x=>!rIds.has(x.id))),rg2=(rem.search&&rem.search.groups)||[],bg=(base.search&&base.search.groups)||[],rgIds=new Set(rg2.map(x=>x.id)),mg=rg2.concat(bg.filter(x=>!rgIds.has(x.id))),bf=(base.featured||[]).filter(x=>x.id!=="android-featured-hero");base={schema:1,featured:bf,search:{customizations:mc,groups:mg},details:Object.assign({},base.details||{},rem.details||{})}}}}catch(_e2){}window.__agMpCatalog=base;return base})();return window.__agMpCatalogPromise});var _ICR=Jja.file.messages.find(m=>m.name==="InstallCustomizationResponse")||Jja.file.messages[537],_cat=await window.__agLoadMarketplaceCatalog().catch(()=>null),_c=((_cat&&_cat.search&&_cat.search.customizations)||[]).find(x=>x.id===u.id),_pname=(u.id||"").split("/").pop(),_url=(_c&&_c.source&&_c.source.archive&&_c.source.archive.url)||"",_mp=(_c&&_c.marketplace)||"antigravity-plugins-official",_ver=(_c&&_c.version)||"1.0.0",_isNat=!!(_c&&_c._androidNative)||["agy-video-studio","craft-anything","chrome-devtools-plugin","android-cli-plugin","science"].includes(_pname);if(_isNat&&window.Android&&window.Android.installMarketplacePlugin){try{var _njr=JSON.parse(window.Android.installMarketplacePlugin(_pname,_url,u.id,_mp,_ver));await new Promise(r=>setTimeout(r,350));return ef(_ICR,_njr,{ignoreUnknownFields:!0})}catch(_ne){}}try{var _ir=await f(v=>v.installCustomization(Vb(Jja,{id:u.id,bundleId:u.bundleId})));if(_ir&&_ir.success){try{window.Android&&window.Android.postProcessInstalledPlugin&&window.Android.postProcessInstalledPlugin(_pname)}catch(_pe){}return _ir}}catch(_e){}try{if(window.Android&&window.Android.installMarketplacePlugin){var _jr=JSON.parse(window.Android.installMarketplacePlugin(_pname,_url,u.id,_mp,_ver));await new Promise(r=>setTimeout(r,350));return ef(_ICR,_jr,{ignoreUnknownFields:!0})}}catch(_e2){return ef(_ICR,{success:!1,message:String(_e2)},{ignoreUnknownFields:!0})}return ef(_ICR,{success:!1,message:"Marketplace install unavailable"},{ignoreUnknownFields:!0})},'
+
 LOADER_INIT_V3 = (
     'typeof window!=="undefined"&&!window.__agMpSmartV3&&(window.__agMpSmartV3=!0,window.__agLoadMarketplaceCatalog=()=>{'
     'if(window.__agMpCatalog)return Promise.resolve(window.__agMpCatalog);'
@@ -29,6 +31,8 @@ LOADER_INIT_V3 = (
     'window.__agMpCatalogPromise=(async()=>{'
     'var base={featured:[],search:{customizations:[],groups:[]},details:{}};'
     'try{var r=await fetch("/marketplace_catalog.json");if(r.ok)base=await r.json()}catch(_e){}'
+    'if(base&&base.search&&base.search.customizations){base.search.customizations.forEach(x=>{x._androidNative=!0})}'
+    'if(base&&base.search&&base.search.groups){base.search.groups.forEach(x=>{x._androidNative=!0})}'
     'try{var ac=typeof AbortController!=="undefined"?new AbortController:null,tid=ac?setTimeout(()=>ac.abort(),3500):null,'
     'r2=await fetch("https://raw.githubusercontent.com/Yhoanes/antigravity-android-plugins/main/catalog.json",ac?{signal:ac.signal}:void 0);'
     'tid&&clearTimeout(tid);'
@@ -41,7 +45,60 @@ LOADER_INIT_V3 = (
     'base={schema:1,featured:bf,search:{customizations:mc,groups:mg},details:Object.assign({},base.details||{},rem.details||{})}'
     '}}}catch(_e2){}'
     'window.__agMpCatalog=base;return base})();'
-    'return window.__agMpCatalogPromise})'
+    'return window.__agMpCatalogPromise});'
+    'typeof window!=="undefined"&&!window.__agJumpInjected&&(window.__agJumpInjected=!0,window.__agTriggerPendingJump=function(){'
+    'var tries=0,timer=setInterval(function(){'
+    'tries++;'
+    'var jump=window.__agPendingConvoJump;'
+    'if(!jump||Date.now()-jump.time>15000||tries>40){clearInterval(timer);return}'
+    'var convoView=document.querySelector(\'[data-testid="conversation-view"]\');'
+    'if(!convoView)return;'
+    'var curCascade=convoView.getAttribute("data-cascade-id");'
+    'if(curCascade&&jump.cascadeId&&curCascade!==jump.cascadeId&&curCascade!=="conversation")return;'
+    'var el=null;'
+    'if(jump.stepIndex!==void 0&&jump.stepIndex!==null){'
+    'el=convoView.querySelector(\'[data-step-index="\'+jump.stepIndex+\'"]\');'
+    '}'
+    'if(!el&&jump.snippet){'
+    'var snip=jump.snippet.replace(/^[.\\s\\u2026]+|[.\\s\\u2026]+$/g,"").trim().toLowerCase();'
+    'if(snip.length>4){'
+    'var words=snip.split(/\\s+/).filter(function(w){return w.length>2}).slice(0,3);'
+    'var walker=document.createTreeWalker(convoView,NodeFilter.SHOW_TEXT);'
+    'var n;'
+    'while(n=walker.nextNode()){'
+    'var t=(n.textContent||"").toLowerCase();'
+    'if(t.includes(snip)||(words.length>0&&words.every(function(w){return t.includes(w)}))){'
+    'el=n.parentElement;break;'
+    '}'
+    '}'
+    '}'
+    '}'
+    'if(!el&&jump.query&&jump.query.length>1){'
+    'var q=jump.query.toLowerCase();'
+    'var walker=document.createTreeWalker(convoView,NodeFilter.SHOW_TEXT);'
+    'var n;'
+    'while(n=walker.nextNode()){'
+    'if((n.textContent||"").toLowerCase().includes(q)){'
+    'el=n.parentElement;break;'
+    '}'
+    '}'
+    '}'
+    'if(el){'
+    'clearInterval(timer);'
+    'window.__agPendingConvoJump=null;'
+    'var target=el.closest(\'[data-testid="agent-response"],[data-step-index],[data-turn-content],.message-row,p,div\')||el;'
+    'target.scrollIntoView({behavior:"smooth",block:"center"});'
+    'var origBg=target.style.backgroundColor,origTr=target.style.transition;'
+    'target.style.transition="background-color 300ms ease";'
+    'target.style.backgroundColor="rgba(255, 235, 59, 0.35)";'
+    'target.style.borderRadius="8px";'
+    'setTimeout(function(){'
+    'target.style.backgroundColor=origBg;'
+    'setTimeout(function(){target.style.transition=origTr},400);'
+    '},1600);'
+    '}'
+    '},120);'
+    '})'
 )
 
 NEW_MP_BLOCK_V3 = (
@@ -51,37 +108,53 @@ NEW_MP_BLOCK_V3 = (
     'var [_cat,_sr]=await Promise.all([window.__agLoadMarketplaceCatalog().catch(()=>null),_gid==="built-for-android"?Promise.resolve(null):f(v=>v.searchMarketplace(Vb(Fja,{query:u.query??"",groupId:_gid,pageToken:_pt}))).catch(()=>null)]);'
     'try{var _allCat=(_cat&&_cat.search&&_cat.search.customizations)||[],_allGrps=(_cat&&_cat.search&&_cat.search.groups)||[],_hasLive=!!(_sr&&_sr.customizations&&_sr.customizations.length>0);'
     'if(_pt&&_hasLive){var _natRaw=_allCat.filter(x=>x._androidNative);if(_natRaw.length>0){var _natMsg=ef(_SMR,{customizations:_natRaw,groups:[]},{ignoreUnknownFields:!0}),_nm=new Map((_natMsg.customizations||[]).map(x=>[x.id,x]));_sr.customizations=_sr.customizations.map(x=>_nm.get(x.id)||x)}return _sr}'
-    'var _srcItems=_hasLive?_allCat.filter(x=>x._androidNative):_allCat,_srcGrps=_hasLive?_allGrps.filter(x=>x.id==="built-for-android"||x._androidNative):_allGrps;'
+    'var _srcItems=_allCat,_srcGrps=_allGrps;'
     'if(_gid){var _g=_allGrps.find(x=>x.id===_gid);_srcItems=_g?_srcItems.filter(x=>_g.memberIds&&_g.memberIds.includes(x.id)):[]}'
     'if(_q){_srcItems=_srcItems.filter(x=>(x.displayName||"").toLowerCase().includes(_q)||(x.id||"").toLowerCase().includes(_q)||(x.description||"").toLowerCase().includes(_q))}'
     'var _localMsg=ef(_SMR,{customizations:_srcItems,groups:_q||_gid?[]:_srcGrps},{ignoreUnknownFields:!0});'
-    'if(_hasLive){var _fullNatMsg=ef(_SMR,{customizations:_allCat.filter(x=>x._androidNative),groups:[]},{ignoreUnknownFields:!0}),_natById=new Map((_fullNatMsg.customizations||[]).map(x=>[x.id,x])),_seen=new Set((_localMsg.customizations||[]).map(x=>x.id)),_merged=(_localMsg.customizations||[]).slice();'
-    'for(var _it of _sr.customizations){var _rep=_natById.get(_it.id)||_it;if(!_seen.has(_rep.id)){_seen.add(_rep.id);_merged.push(_rep)}}'
+    'if(_hasLive){var _seen=new Set((_localMsg.customizations||[]).map(x=>x.id)),_merged=(_localMsg.customizations||[]).slice();'
+    'for(var _it of _sr.customizations){if(!_seen.has(_it.id)){_seen.add(_it.id);_merged.push(_it)}}'
     'var _gSeen=new Set((_localMsg.groups||[]).map(x=>x.id)),_mGrps=_q||_gid?[]:(_localMsg.groups||[]).slice();'
     'if(!_q&&!_gid&&_sr.groups){for(var _gp of _sr.groups){if(!_gSeen.has(_gp.id)){_gSeen.add(_gp.id);_mGrps.push(_gp)}}}'
     '_localMsg.customizations=_merged;_localMsg.groups=_mGrps;_localMsg.nextPageToken=_sr.nextPageToken||""}'
     'return _localMsg}catch(_e2){return _sr||ef(_SMR,{customizations:[],groups:[]},{ignoreUnknownFields:!0})}},'
     'getMarketplaceCustomization:async u=>{' + LOADER_INIT_V3 + ';'
     'var _GCR=Ija.file.messages.find(m=>m.name==="GetMarketplaceCustomizationResponse")||Ija.file.messages[534],'
-    '_cat=await window.__agLoadMarketplaceCatalog().catch(()=>null),_localItem=((_cat&&_cat.search&&_cat.search.customizations)||[]).find(x=>x.id===u.id),_localDet=(_cat&&_cat.details&&_cat.details[u.id])||(_localItem?{customization:_localItem}:null);'
-    'if((_localItem&&_localItem._androidNative)||(_localDet&&_localDet.customization&&_localDet.customization._androidNative)){return ef(_GCR,_localDet,{ignoreUnknownFields:!0})}'
+    '_cat=await window.__agLoadMarketplaceCatalog().catch(()=>null),'
+    '_localItem=((_cat&&_cat.search&&_cat.search.customizations)||[]).find(x=>x.id===u.id),'
+    '_localDet=(_cat&&_cat.details&&_cat.details[u.id])||(_localItem?{customization:_localItem}:null);'
+    'if(_localDet&&_localDet.customization){return ef(_GCR,_localDet,{ignoreUnknownFields:!0})}'
     'try{var _gr=await f(v=>v.getMarketplaceCustomization(Vb(Ija,{id:u.id,includePreview:u.includePreview??!1})));if(_gr&&_gr.customization)return _gr}catch(_e){}'
     'return ef(_GCR,_localDet||{},{ignoreUnknownFields:!0})},'
     'getMarketplaceBundles:async u=>{var _GBR=Eja.file.messages.find(m=>m.name==="GetMarketplaceBundlesResponse")||Eja.file.messages[511];try{return await f(v=>v.getMarketplaceBundles(Vb(Eja,{ids:u.ids??[]})))}catch(_e){return ef(_GBR,{bundles:[],customizations:[]},{ignoreUnknownFields:!0})}},'
     'getMarketplaceFeatured:async()=>{' + LOADER_INIT_V3 + ';'
     'var _GFR=Gja.file.messages.find(m=>m.name==="GetMarketplaceFeaturedResponse")||Gja.file.messages[525];'
-    'try{var _fr=await f(u=>u.getMarketplaceFeatured(Vb(Gja,{})));if(_fr&&_fr.featured&&_fr.featured.length>0)return _fr}catch(_e){}'
-    'try{var _cat=await window.__agLoadMarketplaceCatalog();return ef(_GFR,{featured:((_cat&&_cat.featured)||[]).filter(x=>x.id!=="android-featured-hero"),customizations:(_cat&&_cat.search&&_cat.search.customizations)||[]},{ignoreUnknownFields:!0})}catch(_e2){return ef(_GFR,{featured:[],customizations:[]},{ignoreUnknownFields:!0})}},'
+    'var _cat=await window.__agLoadMarketplaceCatalog().catch(()=>null);'
+    'var _localCust=(_cat&&_cat.search&&_cat.search.customizations)||[];'
+    'var _localFeat=(_cat&&_cat.featured)||[];'
+    'var _androidGrp=((_cat&&_cat.search&&_cat.search.groups)||[]).find(g=>g.id==="built-for-android");'
+    'var _androidShelf=_androidGrp?[{id:"built-for-android-featured",eyebrow:"Built for Android",title:"Built for Android",memberIds:_androidGrp.memberIds||[]}]:[];'
+    'try{var _fr=await f(u=>u.getMarketplaceFeatured(Vb(Gja,{})));if(_fr){'
+    'var _seen=new Set((_fr.customizations||[]).map(x=>x.id)),_cust=(_fr.customizations||[]).slice();'
+    'for(var _lc of _localCust){if(!_seen.has(_lc.id)){_seen.add(_lc.id);_cust.unshift(_lc)}}'
+    'var _feat=_androidShelf.concat(_localFeat).concat(_fr.featured||[]);'
+    'return ef(_GFR,{featured:_feat,customizations:_cust},{ignoreUnknownFields:!0})}}catch(_e){}'
+    'return ef(_GFR,{featured:_androidShelf.concat(_localFeat),customizations:_localCust},{ignoreUnknownFields:!0})},'
     'getOnboardingPersonas:async()=>f(u=>u.getOnboardingPersonas(Vb(Hja,{}))),'
     'installCustomization:async u=>{' + LOADER_INIT_V3 + ';'
     'var _ICR=Jja.file.messages.find(m=>m.name==="InstallCustomizationResponse")||Jja.file.messages[537],'
-    '_cat=await window.__agLoadMarketplaceCatalog().catch(()=>null),_c=((_cat&&_cat.search&&_cat.search.customizations)||[]).find(x=>x.id===u.id),_pname=(u.id||"").split("/").pop(),_url=(_c&&_c.source&&_c.source.archive&&_c.source.archive.url)||"",_mp=(_c&&_c.marketplace)||"antigravity-plugins-official",_ver=(_c&&_c.version)||"1.0.0",_isNat=!!(_c&&_c._androidNative)||["agy-video-studio","craft-anything","chrome-devtools-plugin","android-cli-plugin","science"].includes(_pname);'
+    '_cat=await window.__agLoadMarketplaceCatalog().catch(()=>null),'
+    '_c=((_cat&&_cat.search&&_cat.search.customizations)||[]).find(x=>x.id===u.id),'
+    '_pname=(u.id||"").split("/").pop(),'
+    '_url=(_c&&_c.source&&_c.source.archive&&_c.source.archive.url)||"\",'
+    '_mp=(_c&&_c.marketplace)||"antigravity-plugins-official",'
+    '_ver=(_c&&_c.version)||"1.0.0",'
+    '_isNat=!!(_c&&_c._androidNative)||["agy-video-studio","craft-anything","chrome-devtools-plugin","android-cli-plugin","science","github"].includes(_pname)||!!(_cat&&_cat.details&&_cat.details[u.id]);'
     'if(_isNat&&window.Android&&window.Android.installMarketplacePlugin){try{var _njr=JSON.parse(window.Android.installMarketplacePlugin(_pname,_url,u.id,_mp,_ver));await new Promise(r=>setTimeout(r,350));return ef(_ICR,_njr,{ignoreUnknownFields:!0})}catch(_ne){}}'
     'try{var _ir=await f(v=>v.installCustomization(Vb(Jja,{id:u.id,bundleId:u.bundleId})));if(_ir&&_ir.success){try{window.Android&&window.Android.postProcessInstalledPlugin&&window.Android.postProcessInstalledPlugin(_pname)}catch(_pe){}return _ir}}catch(_e){}'
     'try{if(window.Android&&window.Android.installMarketplacePlugin){var _jr=JSON.parse(window.Android.installMarketplacePlugin(_pname,_url,u.id,_mp,_ver));await new Promise(r=>setTimeout(r,350));return ef(_ICR,_jr,{ignoreUnknownFields:!0})}}catch(_e2){return ef(_ICR,{success:!1,message:String(_e2)},{ignoreUnknownFields:!0})}'
     'return ef(_ICR,{success:!1,message:"Marketplace install unavailable"},{ignoreUnknownFields:!0})},'
 )
-
 
 def patch_backup_restore(content):
     if "BackupRestoreScreen" in content:
@@ -319,6 +392,61 @@ def patch_terminal_touch_scroll(content):
     return content
 
 
+
+def patch_conversation_search_jump(content):
+    if "__agPendingConvoJump" in content:
+        return content
+
+    content = must_replace(
+        content,
+        'function Atc(a,b){var c=ytc(a.snippetMatchRanges),{snippet:d,matches:f}=ztc(a.snippet,c);(c=d.trim().replace(/^\\.\\.\\.|\\.\\.\\.$/g,"").trim())&&a.title.trim().toLowerCase().includes(c)&&(d="",f=void 0);return{type:"basic",item:{id:a.cascadeId,label:a.title||"Untitled Conversation"',
+        'function Atc(a,b){var c=ytc(a.snippetMatchRanges),{snippet:d,matches:f}=ztc(a.snippet,c);(c=d.trim().replace(/^\\.\\.\\.|\\.\\.\\.$/g,"").trim())&&a.title.trim().toLowerCase().includes(c)&&(d="",f=void 0);return{type:"basic",item:{id:a.cascadeId,matchedStepIndex:a.matchedStepIndex,snippet:a.snippet,queryMatches:a.snippetMatchRanges,label:a.title||"Untitled Conversation"',
+        "Atc_item_metadata",
+    )
+
+    content = must_replace(
+        content,
+        'selectOrClose:X=>{V(X);X&&f(X.id);d()}',
+        'selectOrClose:X=>{V(X);if(X){if(X.matchedStepIndex!==void 0||X.snippet||b){window.__agPendingConvoJump={cascadeId:X.id,stepIndex:X.matchedStepIndex,snippet:X.snippet,query:(b||"").trim(),time:Date.now()};typeof window.__agTriggerPendingJump==="function"&&window.__agTriggerPendingJump()}f(X.id)}d()}',
+        "conversations_palette_select_jump",
+    )
+
+    content = must_replace(
+        content,
+        'var yic=({userStep:a,userStepIndex:b,sendError:c})=>{var d=PX();return B.createElement("div",{className:"flex w-full flex-row"},',
+        'var yic=({userStep:a,userStepIndex:b,sendError:c})=>{var d=PX();return B.createElement("div",{className:"flex w-full flex-row","data-step-index":b},',
+        "yic_user_step_index_attr",
+    )
+
+    return content
+
+
+def patch_contextual_search_icon(content):
+    if 'data-testid="sidebar-search-button"' in content and "Find in Conversation" in content:
+        return content
+
+    content = must_replace(
+        content,
+        'B.createElement(yV,{iconName:"search",onClick:()=>{ha(wg.CONVERSATION_PICKER_OPEN,"sidebar_search_button");\nP?.executeCommand("openConvoPicker")},"aria-label":"Search Conversations",dataTooltipId:oa,dataTestId:"sidebar-search-button"})',
+        'B.createElement(yV,{iconName:"search",onClick:()=>{var _drw=!!document.querySelector(\'[data-testid="sidebar-toggle"][aria-expanded="true"]\');if(fa&&!_drw){P?.executeCommand("conversationView.findInConversation");setTimeout(()=>{var inp=document.querySelector(\'input[placeholder="Find"]\')||document.querySelector(\'[data-testid="find-input"]\')||document.querySelector(".sticky input");if(inp){inp.focus();inp.select()}else{var cv=document.querySelector(\'[data-testid="conversation-view"]\')||document.body;cv.dispatchEvent(new KeyboardEvent("keydown",{key:"f",code:"KeyF",ctrlKey:!0,bubbles:!0}))}},50)}else{ha(wg.CONVERSATION_PICKER_OPEN,"sidebar_search_button");P?.executeCommand("openConvoPicker")}},"aria-label":(fa&&!document.querySelector(\'[data-testid="sidebar-toggle"][aria-expanded="true"]\'))?"Find in Conversation":"Search Conversations",dataTooltipId:oa,dataTestId:"sidebar-search-button"})',
+        "main_titlebar_contextual_search",
+    )
+
+    content = must_replace(
+        content,
+        'd&&B.createElement(B.Fragment,null,B.createElement(yV,{iconName:"search",onClick:()=>{h(wg.CONVERSATION_PICKER_OPEN,"sidebar_search_button");g?.executeCommand("openConvoPicker")},"aria-label":"Search Conversations",dataTooltipId:k,dataTestId:"sidebar-search-button"})',
+        'd&&B.createElement(B.Fragment,null,B.createElement(yV,{iconName:"search",onClick:()=>{var _drw=!!document.querySelector(\'[data-testid="sidebar-toggle"][aria-expanded="true"]\');if(a&&!_drw){g?.executeCommand("conversationView.findInConversation");setTimeout(()=>{var inp=document.querySelector(\'input[placeholder="Find"]\')||document.querySelector(\'[data-testid="find-input"]\')||document.querySelector(".sticky input");if(inp){inp.focus();inp.select()}else{var cv=document.querySelector(\'[data-testid="conversation-view"]\')||document.body;cv.dispatchEvent(new KeyboardEvent("keydown",{key:"f",code:"KeyF",ctrlKey:!0,bubbles:!0}))}},50)}else{h(wg.CONVERSATION_PICKER_OPEN,"sidebar_search_button");g?.executeCommand("openConvoPicker")}},"aria-label":(a&&!document.querySelector(\'[data-testid="sidebar-toggle"][aria-expanded="true"]\'))?"Find in Conversation":"Search Conversations",dataTooltipId:k,dataTestId:"sidebar-search-button"})',
+        "tXc_contextual_search",
+    )
+
+    content = must_replace(
+        content,
+        'b&&h&&B.createElement(yV,{iconName:"search",onClick:()=>{k(wg.CONVERSATION_PICKER_OPEN,"sidebar_search_button");h.executeCommand("openConvoPicker")},"aria-label":"Search Conversations",dataTestId:"mobile-search-conversations",size:"icon-touch"})',
+        'h&&B.createElement(yV,{iconName:"search",onClick:()=>{var _drw=!!document.querySelector(\'[data-testid="sidebar-toggle"][aria-expanded="true"]\');if(!b&&!_drw){h.executeCommand("conversationView.findInConversation");setTimeout(()=>{var inp=document.querySelector(\'input[placeholder="Find"]\')||document.querySelector(\'[data-testid="find-input"]\');if(inp){inp.focus();inp.select()}else{var cv=document.querySelector(\'[data-testid="conversation-view"]\')||document.body;cv.dispatchEvent(new KeyboardEvent("keydown",{key:"f",code:"KeyF",ctrlKey:!0,bubbles:!0}))}},50)}else{k(wg.CONVERSATION_PICKER_OPEN,"sidebar_search_button");h.executeCommand("openConvoPicker")}},"aria-label":(!b&&!document.querySelector(\'[data-testid="sidebar-toggle"][aria-expanded="true"]\'))?"Find in Conversation":"Search Conversations",dataTestId:"mobile-search-conversations",size:"icon-touch"})',
+        "WZc_mobile_contextual_search",
+    )
+
+    return content
 def patch_main(file_path):
     if not os.path.isfile(file_path):
         print(f"[web-patch-2.32.1] file not found: {file_path}", file=sys.stderr)
@@ -328,17 +456,35 @@ def patch_main(file_path):
         content = f.read()
 
     if "Android.getTheme" in content and "__agMpSmartV3" in content and "__AgRootEB" in content:
-        if "BackupRestoreScreen" in content and ('data-testid=\\"terminal-surface\\"' in content or 'data-testid="terminal-surface"' in content):
-            print("[web-patch-2.32.1] main.js already patched (v2.32.1 Android UI + Smart Marketplace V3 + RootEB + BackupRestore + Terminal)")
-            return True
-        print("[web-patch-2.32.1] Applying BackupRestoreScreen and Terminal patches...")
-        content = patch_backup_restore(content)
-        content = patch_terminal_touch_scroll(content)
-        with open(file_path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(content)
-        print("[web-patch-2.32.1] Successfully patched Backup & Restore (skills, convos, projects) and Terminal scroll into main.js!")
-        return True
+        changed = False
+        if "BackupRestoreScreen" not in content:
+            print("[web-patch-2.32.1] Applying BackupRestoreScreen patch...")
+            content = patch_backup_restore(content)
+            changed = True
+        if 'data-testid="terminal-surface"' not in content and 'data-testid=\"terminal-surface\"' not in content:
+            print("[web-patch-2.32.1] Applying Terminal touch scroll patch...")
+            content = patch_terminal_touch_scroll(content)
+            changed = True
+        if "__agPendingConvoJump" not in content:
+            print("[web-patch-2.32.1] Applying Conversation Search Jump patch...")
+            content = patch_conversation_search_jump(content)
+            changed = True
+        if "Find in Conversation" not in content:
+            print("[web-patch-2.32.1] Applying Contextual Search Icon patch...")
+            content = patch_contextual_search_icon(content)
+            changed = True
+        if OLD_MP_BLOCK_V3 in content:
+            print("[web-patch-2.32.1] Updating Marketplace V3 RPCs with full catalog & Featured merge...")
+            content = content.replace(OLD_MP_BLOCK_V3, NEW_MP_BLOCK_V3, 1)
+            changed = True
 
+        if changed:
+            with open(file_path, "w", encoding="utf-8", newline="\n") as f:
+                f.write(content)
+            print("[web-patch-2.32.1] Successfully updated patches in main.js!")
+        else:
+            print("[web-patch-2.32.1] main.js already fully patched (v2.32.1 Android UI + Smart Marketplace V3 + RootEB + BackupRestore + Contextual Search + Message Jump)")
+        return True
     # 1a. g_() system theme resolver via window.Android.getTheme()
     content = must_replace(
         content,

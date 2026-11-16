@@ -67,21 +67,11 @@ function installTerminalTouchScroll(global, doc) {
       } catch (e) {}
     }
 
-    if (global.MutationObserver) {
-      var observer = new MutationObserver(function (mutations) {
-        for (var i = 0; i < mutations.length; i++) {
-          var m = mutations[i];
-          if (m.addedNodes && m.addedNodes.length > 0) {
-            for (var j = 0; j < m.addedNodes.length; j++) {
-              var node = m.addedNodes[j];
-              if (node.nodeType === 1) {
-                markTerminalElements(node);
-              }
-            }
-          }
-        }
-      });
-      observer.observe(doc.body || doc.documentElement, { childList: true, subtree: true });
+    // Initial marking on DOM ready; avoid continuous MutationObserver to prevent UI stutter
+    if (doc.readyState === 'loading') {
+      doc.addEventListener('DOMContentLoaded', function () { markTerminalElements(doc); }, { once: true });
+    } else {
+      markTerminalElements(doc);
     }
 
     doc.addEventListener('touchstart', function (e) {

@@ -10,7 +10,8 @@ function installGpu(doc) {
       // Promote ONLY the real scroll containers. Never inline <code>/<pre>:
       // per-element layers explode on Mali and saturate RenderThread.
       gpu.textContent =
-        'main, [data-testid="chat-container"], .scrollable {' +
+        'html, body { scroll-behavior: smooth; }' +
+        'main, [data-testid="chat-container"], [data-testid="conversation-view"], .scrollable {' +
         ' transform: translateZ(0);' +
         ' -webkit-overflow-scrolling: touch; }' +
         '[role="listitem"], .message-row, .artifact-viewer {' +

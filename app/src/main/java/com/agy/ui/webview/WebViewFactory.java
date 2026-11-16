@@ -21,8 +21,9 @@ public final class WebViewFactory {
         view.setFocusable(true);
         view.setFocusableInTouchMode(true);
         view.requestFocus(View.FOCUS_DOWN);
-        // Hardware layer: hand compositing to the GPU (manifest enables HW accel).
-        view.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        // Layer type NONE: hardware acceleration is already enabled at window/manifest level.
+        // LAYER_TYPE_HARDWARE forces offscreen texture compositing on every frame, causing sluggishness.
+        view.setLayerType(View.LAYER_TYPE_NONE, null);
         view.addJavascriptInterface(bridge, bridge.getNativeBindingName());
         // Android WebView needs an explicit focus grant for the soft keyboard to show.
         view.setOnTouchListener(new View.OnTouchListener() {
