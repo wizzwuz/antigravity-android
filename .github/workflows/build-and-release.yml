@@ -71,6 +71,8 @@ jobs:
               -keyalg RSA -keysize 2048 -validity 10000 \
               -dname "CN=Android Debug,O=Android,C=US"
           fi
+          mkdir -p "$HOME/.android"
+          cp -f tools/debug.keystore "$HOME/.android/debug.keystore"
 
           # 2. Setup Android API 28 android.jar if absent
           if [ ! -f "tools/android.jar" ]; then
@@ -95,10 +97,14 @@ jobs:
           fi
 
       - name: Build Standard Release APK (dist/antigravity.apk)
+        env:
+          KEYSTORE: ${{ github.workspace }}/tools/debug.keystore
         run: |
           bash build.sh
 
       - name: Build Region Bypass Release APK (dist/antigravity-region-bypass.apk)
+        env:
+          KEYSTORE: ${{ github.workspace }}/tools/debug.keystore
         run: |
           bash build.sh --region-bypass
 

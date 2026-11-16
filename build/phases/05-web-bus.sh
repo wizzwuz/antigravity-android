@@ -18,9 +18,9 @@ if [ -d "$BUS_DIR" ]; then
 else
     log "  bus/ absent, skipped"
 fi
-if [ -d "$ROOT_DIR/plugins/craft-anything" ]; then
+if [ -d "${ROOT_DIR:-$PROJECT}/plugins/craft-anything" ]; then
     mkdir -p "$STAGE_ASSETS/plugins"
-    ( cd "$ROOT_DIR/plugins/craft-anything" && zip -q -r "$STAGE_ASSETS/plugins/craft-anything.zip" . )
+    ( cd "${ROOT_DIR:-$PROJECT}/plugins/craft-anything" && zip -q -r "$STAGE_ASSETS/plugins/craft-anything.zip" . )
     log "  plugins/craft-anything.zip packaged"
 fi
 # byte-for-byte invariant: assets/web == web/ (build-only files excluded)

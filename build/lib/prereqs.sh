@@ -15,6 +15,28 @@ check_tools() {
     [ -f "$CORE_SRC" ] || [ -f "${CORE_SRC}.tar.gz" ] || die "core not found: $CORE_SRC (or ${CORE_SRC}.tar.gz)"
     [ -f "$ANDROID_JAR" ]        || die "android.jar not found: $ANDROID_JAR"
     [ -f "$R8_JAR" ]             || die "r8.jar not found: $R8_JAR"
+    if [ ! -f "$KEYSTORE" ]; then
+        if [ -f "${PROJECT:-.}/tools/debug.keystore" ]; then
+            KEYSTORE="${PROJECT:-.}/tools/debug.keystore"
+        elif [ -f "${TOOLS_DIR:-$PROJECT/tools}/debug.keystore" ]; then
+            KEYSTORE="${TOOLS_DIR:-$PROJECT/tools}/debug.keystore"
+        elif [ -f "${HOME:-.}/.android/debug.keystore" ]; then
+            KEYSTORE="${HOME:-.}/.android/debug.keystore"
+        elif [ "$KEY_ALIAS" = "androiddebugkey" ]; then
+            log "generating debug keystore: $KEYSTORE"
+            mkdir -p "$(dirname "$KEYSTORE")"
+            keytool -genkeypair \
+                -keystore "$KEYSTORE" \
+                -storetype PKCS12 \
+                -alias "$KEY_ALIAS" \
+                -keyalg RSA \
+                -keysize 2048 \
+                -validity 10000 \
+                -storepass "$STORE_PASS" \
+                -keypass "$KEY_PASS" \
+                -dname "CN=Android Debug,O=Android,C=US" >/dev/null 2>&1 || true
+        fi
+    fi
     [ -f "$KEYSTORE" ]           || die "keystore not found: $KEYSTORE"
     [ -f "$MANIFEST_XML" ]       || die "manifest not found: $MANIFEST_XML"
     [ -d "$WEB_DIR" ]            || die "web/ not found: $WEB_DIR"
