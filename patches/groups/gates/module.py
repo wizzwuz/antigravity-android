@@ -100,6 +100,9 @@ def run(target_path, verify=False, dry_run=False, allow_missing=False, log=print
         total = summary[shape]
         exp = EXPECTED_COUNTS[shape]
         if total == 0:
+            if shape == "voice_cfg_s2" or allow_missing:
+                report["observed_counts"][shape] = {"raw": 0, "patched": 0}
+                continue
             msg = "missing %s gate signature (expected %d)" % (shape, exp)
             if not base.run_missing(report, allow_missing, TAG, log, msg):
                 return False, report
@@ -111,6 +114,7 @@ def run(target_path, verify=False, dry_run=False, allow_missing=False, log=print
             return False, report
 
     if verify:
+        has_vc2 = summary["voice_cfg_s2"] > 0
         ok = (
             len(st["raw_cli"]) == 0
             and len(st["pat_cli"]) == EXPECTED_COUNTS["cli"]
@@ -122,8 +126,7 @@ def run(target_path, verify=False, dry_run=False, allow_missing=False, log=print
             and len(st["pat_vall"]) == EXPECTED_COUNTS["voice_allowed"]
             and len(st["raw_vc1"]) == 0
             and len(st["pat_vc1"]) == EXPECTED_COUNTS["voice_cfg_s1"]
-            and len(st["raw_vc2"]) == 0
-            and len(st["pat_vc2"]) == EXPECTED_COUNTS["voice_cfg_s2"]
+            and (not has_vc2 or (len(st["raw_vc2"]) == 0 and len(st["pat_vc2"]) == EXPECTED_COUNTS["voice_cfg_s2"]))
             and len(st["raw_sbox_avail"]) == 0
             and len(st["pat_sbox_avail"]) == EXPECTED_COUNTS["sbox_avail"]
             and len(st["raw_sbox_init"]) == 0

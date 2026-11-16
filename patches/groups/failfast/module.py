@@ -56,8 +56,9 @@ def run(target_path, verify=False, dry_run=False, allow_missing=False, log=print
         "atomic_replacement": hex_list(repl_atomic),
     }
 
+    has_atomic = (len(raw_atomic) + len(repl_atomic)) > 0
     cpu_ok = (len(raw_cpu) == 0 and len(repl_cpu) == 1)
-    atomic_ok = (len(raw_atomic) == 0 and len(repl_atomic) == 1)
+    atomic_ok = (len(raw_atomic) == 0 and len(repl_atomic) == 1) if has_atomic else True
 
     if verify:
         ok = cpu_ok and atomic_ok
@@ -71,7 +72,7 @@ def run(target_path, verify=False, dry_run=False, allow_missing=False, log=print
             report, TAG, log,
             detail=" (cpu repl=%d, atomic repl=%d)" % (len(repl_cpu), len(repl_atomic))), report
 
-    if (len(raw_cpu) == 0 and len(repl_cpu) == 0) and (len(raw_atomic) == 0 and len(repl_atomic) == 0):
+    if (len(raw_cpu) == 0 and len(repl_cpu) == 0) and not has_atomic:
         if allow_missing:
             return base.run_missing(
                 report, True, TAG, log, "no fail-fast signature found",
@@ -83,7 +84,7 @@ def run(target_path, verify=False, dry_run=False, allow_missing=False, log=print
         log("[%s] ERROR: %s" % (TAG, report["messages"][-1]))
         return False, report
 
-    if len(raw_atomic) + len(repl_atomic) != 1:
+    if has_atomic and len(raw_atomic) + len(repl_atomic) != 1:
         report["messages"].append("unexpected preinit atomic count (raw=%d, repl=%d)" % (len(raw_atomic), len(repl_atomic)))
         log("[%s] ERROR: %s" % (TAG, report["messages"][-1]))
         return False, report
