@@ -394,7 +394,7 @@ def patch_terminal_touch_scroll(content):
 
 
 def patch_conversation_search_jump(content):
-    if "__agPendingConvoJump" in content:
+    if "__agPendingConvoJump" in content and "stepIndex:I.matchedStepIndex" in content:
         return content
 
     content = must_replace(
@@ -406,10 +406,32 @@ def patch_conversation_search_jump(content):
 
     content = must_replace(
         content,
-        'selectOrClose:X=>{V(X);X&&f(X.id);d()}',
-        'selectOrClose:X=>{V(X);if(X){if(X.matchedStepIndex!==void 0||X.snippet||b){window.__agPendingConvoJump={cascadeId:X.id,stepIndex:X.matchedStepIndex,snippet:X.snippet,query:(b||"").trim(),time:Date.now()};typeof window.__agTriggerPendingJump==="function"&&window.__agTriggerPendingJump()}f(X.id)}d()}',
-        "conversations_palette_select_jump",
+        'z.conversations.map(I=>({item:Atc(I,m).item,onSelect:()=>{h(I.cascadeId)}}))',
+        'z.conversations.map(I=>({item:Atc(I,m).item,onSelect:()=>{window.__agPendingConvoJump={cascadeId:I.cascadeId,stepIndex:I.matchedStepIndex,snippet:I.snippet,query:(z.query||a||"").trim(),time:Date.now()};typeof window.__agTriggerPendingJump==="function"&&window.__agTriggerPendingJump();h(I.cascadeId)}}))',
+        "Rtc_unified_convo_search_select_jump",
     )
+
+    content = must_replace(
+        content,
+        'p.filter(({item:I})=>qZ(I.label,z.query)).map(({item:I})=>({item:I,onSelect:()=>{h(I.id)}}))',
+        'p.filter(({item:I})=>qZ(I.label,z.query)).map(({item:I})=>({item:I,onSelect:()=>{window.__agPendingConvoJump={cascadeId:I.id,stepIndex:void 0,snippet:"",query:(z.query||a||"").trim(),time:Date.now()};typeof window.__agTriggerPendingJump==="function"&&window.__agTriggerPendingJump();h(I.id)}}))',
+        "Rtc_fallback_convo_search_select_jump",
+    )
+
+    if 'selectOrClose:X=>{V(X);if(X){if(X.matchedStepIndex!==void 0||X.snippet||b)' in content:
+        content = must_replace(
+            content,
+            'selectOrClose:X=>{V(X);if(X){if(X.matchedStepIndex!==void 0||X.snippet||b){window.__agPendingConvoJump={cascadeId:X.id,stepIndex:X.matchedStepIndex,snippet:X.snippet,query:(b||"").trim(),time:Date.now()};typeof window.__agTriggerPendingJump==="function"&&window.__agTriggerPendingJump()}f(X.id)}d()}',
+            'selectOrClose:X=>{V(X);if(X){var _match=(typeof O!=="undefined"&&Array.isArray(O))?O.find(x=>x.cascadeId===X.id):null;window.__agPendingConvoJump={cascadeId:X.id,stepIndex:_match?_match.matchedStepIndex:void 0,snippet:_match?_match.snippet:"",query:(b||"").trim(),time:Date.now()};typeof window.__agTriggerPendingJump==="function"&&window.__agTriggerPendingJump();f(X.id)}d()}',
+            "Ttc_conversations_palette_select_jump",
+        )
+    elif 'selectOrClose:X=>{V(X);X&&f(X.id);d()}' in content:
+        content = must_replace(
+            content,
+            'selectOrClose:X=>{V(X);X&&f(X.id);d()}',
+            'selectOrClose:X=>{V(X);if(X){var _match=(typeof O!=="undefined"&&Array.isArray(O))?O.find(x=>x.cascadeId===X.id):null;window.__agPendingConvoJump={cascadeId:X.id,stepIndex:_match?_match.matchedStepIndex:void 0,snippet:_match?_match.snippet:"",query:(b||"").trim(),time:Date.now()};typeof window.__agTriggerPendingJump==="function"&&window.__agTriggerPendingJump();f(X.id)}d()}',
+            "Ttc_conversations_palette_select_jump",
+        )
 
     content = must_replace(
         content,
@@ -419,7 +441,6 @@ def patch_conversation_search_jump(content):
     )
 
     return content
-
 
 def patch_contextual_search_icon(content):
     if 'data-testid="sidebar-search-button"' in content and "Find in Conversation" in content:
