@@ -12,5 +12,6 @@ if (!doc) return;
 installTaps(doc);
 installViewport(global, doc);
 installGpu(doc);
+installTerminalTouchScroll(global, doc);
 
 global.__agWebOptimizations = { installed: true };

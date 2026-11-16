@@ -83,6 +83,242 @@ NEW_MP_BLOCK_V3 = (
 )
 
 
+def patch_backup_restore(content):
+    if "BackupRestoreScreen" in content:
+        print("  [OK] BackupRestoreScreen already present")
+        return content
+
+    # 1. Update mEb Map to include "Backup and Restore"
+    content = must_replace(
+        content,
+        '["Provide Feedback","Give Feedback"]',
+        '["Provide Feedback","Give Feedback"],["Backup and Restore","Backup and Restore"]',
+        "mEb_backup_restore_label"
+    )
+
+    # 2. Add to mobile settings screen list in zPb
+    content = must_replace(
+        content,
+        'b=[...c.filter(p=>p!=="Account"),...d,...(b?["Provide Feedback"]:[])];',
+        'b=[...c.filter(p=>p!=="Account"),...d,...(b?["Provide Feedback"]:[]),"Backup and Restore"];',
+        "zPb_mobile_settings_list"
+    )
+
+    # 3. Add to screen resolver in vPb
+    content = must_replace(
+        content,
+        'case "Provide Feedback":return B.createElement(UKb,null);',
+        'case "Provide Feedback":return B.createElement(UKb,null);case "Backup and Restore":return B.createElement(BackupRestoreScreen,null);',
+        "vPb_screen_resolver"
+    )
+
+    # 4. Add to desktop settings sidebar in YRb
+    content = must_replace(
+        content,
+        'B.createElement(qz,{id:F,place:"right"},"Upload Debug Bundle")):void 0})',
+        'B.createElement(qz,{id:F,place:"right"},"Upload Debug Bundle")):void 0}),B.createElement(rV,{text:"Backup and Restore",label:IQ("Backup and Restore"),onClick:()=>{M(ou("Backup and Restore"))},isActive:L&&c==="Backup and Restore"})',
+        "YRb_desktop_settings_sidebar"
+    )
+
+    # 5. Add to desktop settings screen view container in iSb
+    content = must_replace(
+        content,
+        'l&&B.createElement("div",{style:{display:c==="Provide Feedback"?"block":"none"}},B.createElement(UKb,null)),',
+        'l&&B.createElement("div",{style:{display:c==="Provide Feedback"?"block":"none"}},B.createElement(UKb,null)),B.createElement("div",{style:{display:c==="Backup and Restore"?"block":"none"}},B.createElement(BackupRestoreScreen,null)),',
+        "iSb_desktop_view_container"
+    )
+
+    # 6. Inject BackupRestoreScreen component before var UKb=
+    backup_restore_comp = '''var BackupRestoreScreen=()=>{
+var [status,setStatus]=(0,B.useState)(null);
+var [isProcessing,setIsProcessing]=(0,B.useState)(!1);
+var [projects,setProjects]=(0,B.useState)([]);
+var [selectedProject,setSelectedProject]=(0,B.useState)("all");
+var [skills,setSkills]=(0,B.useState)([]);
+var [selectedSkill,setSelectedSkill]=(0,B.useState)("all");
+var [conversations,setConversations]=(0,B.useState)([]);
+var [selectedConversation,setSelectedConversation]=(0,B.useState)("all");
+var [showRestartPrompt,setShowRestartPrompt]=(0,B.useState)(!1);
+var [restartMessage,setRestartMessage]=(0,B.useState)("");
+(0,B.useEffect)(()=>{
+try{
+if(typeof window!=="undefined"&&window.Android&&typeof window.Android.listProjects==="function"){
+var pList=JSON.parse(window.Android.listProjects()||"[]");
+if(Array.isArray(pList))setProjects(pList);
+}
+}catch(_){}
+try{
+if(typeof window!=="undefined"&&window.Android&&typeof window.Android.listSkills==="function"){
+var sList=JSON.parse(window.Android.listSkills()||"[]");
+if(Array.isArray(sList))setSkills(sList);
+}
+}catch(_){}
+try{
+if(typeof window!=="undefined"&&window.Android&&typeof window.Android.listConversations==="function"){
+var cList=JSON.parse(window.Android.listConversations()||"[]");
+if(Array.isArray(cList))setConversations(cList);
+}
+}catch(_){}
+if(typeof window!=="undefined"){
+window.__onBackupRestoreStatus=function(res){
+setIsProcessing(!1);
+if(typeof res==="string"){try{res=JSON.parse(res)}catch(_){res={message:res}}}
+setStatus(res);
+if(res&&res.success&&(res.type==="restore_conversation"||res.type==="restore_projects"||res.type==="restore_skills")){
+setRestartMessage(res.type==="restore_conversation"?"Conversations restored successfully. Would you like to restart the app now to reload all conversations?":res.type==="restore_skills"?"Skills restored successfully. Would you like to restart the app now to reload custom skills?":"Projects restored successfully. Would you like to restart the app now to reload your workspace?");
+setShowRestartPrompt(!0);
+}
+};
+return function(){
+if(typeof window!=="undefined")window.__onBackupRestoreStatus=null;
+};
+}
+},[]);
+var onBackupConvos=()=>{
+setIsProcessing(!0);
+setStatus({type:"info",message:"Opening file picker to choose backup location..."});
+try{
+if(window.Android&&typeof window.Android.backupConversations==="function")window.Android.backupConversations();
+else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
+}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
+};
+var onRestoreConvos=()=>{
+setIsProcessing(!0);
+setStatus({type:"info",message:"Opening file picker to select backup archive..."});
+try{
+if(window.Android&&typeof window.Android.restoreConversations==="function")window.Android.restoreConversations();
+else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
+}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
+};
+var onBackupProj=()=>{
+setIsProcessing(!0);
+setStatus({type:"info",message:"Opening file picker to save project ZIP..."});
+try{
+if(window.Android&&typeof window.Android.backupProjects==="function")window.Android.backupProjects(selectedProject);
+else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
+}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
+};
+var onRestoreProj=()=>{
+setIsProcessing(!0);
+setStatus({type:"info",message:"Opening file picker to select project ZIP..."});
+try{
+if(window.Android&&typeof window.Android.restoreProjects==="function")window.Android.restoreProjects(selectedProject!=="all"?selectedProject:"");
+else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
+}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
+};
+var onBackupSkills=()=>{
+setIsProcessing(!0);
+setStatus({type:"info",message:"Opening file picker to save skills ZIP..."});
+try{
+if(window.Android&&typeof window.Android.backupSkills==="function")window.Android.backupSkills(selectedSkill);
+else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
+}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
+};
+var onRestoreSkills=()=>{
+setIsProcessing(!0);
+setStatus({type:"info",message:"Opening file picker to select skills ZIP..."});
+try{
+if(window.Android&&typeof window.Android.restoreSkills==="function")window.Android.restoreSkills(selectedSkill!=="all"?selectedSkill:"");
+else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
+}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
+};
+return B.createElement(HQ,{title:IQ("Backup and Restore")},
+B.createElement("div",{className:"space-y-6 max-w-2xl pb-8 p-1 relative"},
+showRestartPrompt&&B.createElement("div",{className:"fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in"},
+B.createElement("div",{className:"w-full max-w-sm rounded-2xl border border-border bg-popover p-5 space-y-4 shadow-xl text-popover-foreground"},
+B.createElement("div",{className:"space-y-1.5"},
+B.createElement("h3",{className:"text-base font-semibold m-0 text-foreground"},"Restart Required"),
+B.createElement("p",{className:"text-sm text-muted-foreground m-0 leading-relaxed"},restartMessage||"Restoration completed successfully. Would you like to restart the app now to apply all changes?")),
+B.createElement("div",{className:"flex items-center justify-end gap-2.5 pt-2"},
+B.createElement(sz,{variant:"secondary",size:"md",onClick:()=>setShowRestartPrompt(!1)},"Cancel"),
+B.createElement(sz,{variant:"primary",size:"md",onClick:()=>{
+setShowRestartPrompt(!1);
+try{if(window.Android&&typeof window.Android.restartApp==="function")window.Android.restartApp()}
+catch(_){}
+}},"OK")))),
+status&&B.createElement("div",{className:Gi("p-3 rounded-xl border text-sm flex items-start gap-2.5 transition-all shadow-sm",
+status.success?"bg-emerald-500/10 border-emerald-500/30 text-emerald-300":
+status.type==="info"?"bg-sky-500/10 border-sky-500/30 text-sky-300":
+"bg-red-500/10 border-red-500/30 text-red-300")},
+B.createElement(nq,{name:status.success?"check_circle":status.type==="info"?"info":"error",size:18,className:"shrink-0 mt-0.5"}),
+B.createElement("div",{className:"flex-1"},B.createElement("div",{className:"font-medium"},status.title||(status.success?"Success":status.type==="info"?"Processing":"Notice")),status.message&&B.createElement("div",{className:"text-xs opacity-90 mt-0.5"},status.message)),
+B.createElement("button",{type:"button",onClick:()=>setStatus(null),className:"text-xs opacity-60 hover:opacity-100 p-1 border-none bg-transparent cursor-pointer text-inherit"},"✕")),
+B.createElement("div",{className:"rounded-2xl border border-border bg-sidebar-muted/20 p-4 space-y-3.5 shadow-xs"},
+B.createElement("div",{className:"flex items-center gap-3"},
+B.createElement("div",{className:"p-2.5 rounded-xl bg-primary/10 text-primary flex items-center justify-center"},
+B.createElement(nq,{name:"forum",size:22})),
+B.createElement("div",null,
+B.createElement("h3",{className:"font-semibold text-base text-foreground m-0"},"Conversations & Trajectories"),
+B.createElement("p",{className:"text-xs text-muted-foreground mt-0.5 mb-0 leading-relaxed"},
+"Fast, compressed archive of conversation history, transcripts, and brain artifacts (.zip). Space-saving and complete."))),
+B.createElement("div",{className:"flex flex-wrap gap-2.5 pt-1"},
+B.createElement(sz,{variant:"primary",size:"md",disabled:isProcessing,onClick:onBackupConvos,className:"flex items-center gap-1.5"},
+B.createElement(nq,{name:"upload",size:16}),"Backup Conversations"),
+B.createElement(sz,{variant:"secondary",size:"md",disabled:isProcessing,onClick:onRestoreConvos,className:"flex items-center gap-1.5"},
+B.createElement(nq,{name:"download",size:16}),"Restore Conversations"))),
+B.createElement("div",{className:"rounded-2xl border border-border bg-sidebar-muted/20 p-4 space-y-3.5 shadow-xs"},
+B.createElement("div",{className:"flex items-center gap-3"},
+B.createElement("div",{className:"p-2.5 rounded-xl bg-primary/10 text-primary flex items-center justify-center"},
+B.createElement(nq,{name:"folder_zip",size:22})),
+B.createElement("div",null,
+B.createElement("h3",{className:"font-semibold text-base text-foreground m-0"},"Project Files"),
+B.createElement("p",{className:"text-xs text-muted-foreground mt-0.5 mb-0 leading-relaxed"},
+"Backup and restore workspace projects as standard ZIP archives."))),
+B.createElement("div",{className:"space-y-1.5 pt-1"},
+B.createElement("label",{className:"block text-xs font-medium text-muted-foreground"},"Target Project Scope:"),
+B.createElement("select",{value:selectedProject,onChange:e=>setSelectedProject(e.target.value),className:"w-full p-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"},
+B.createElement("option",{value:"all"},"All Scratch Projects (Complete Workspace)"),
+projects.map(p=>B.createElement("option",{key:p,value:p},"Project: "+p)))),
+B.createElement("div",{className:"flex flex-wrap gap-2.5 pt-1"},
+B.createElement(sz,{variant:"primary",size:"md",disabled:isProcessing,onClick:onBackupProj,className:"flex items-center gap-1.5"},
+B.createElement(nq,{name:"upload",size:16}),"Backup Projects (.zip)"),
+B.createElement(sz,{variant:"secondary",size:"md",disabled:isProcessing,onClick:onRestoreProj,className:"flex items-center gap-1.5"},
+B.createElement(nq,{name:"download",size:16}),"Restore Projects (.zip)"))),
+B.createElement("div",{className:"rounded-2xl border border-border bg-sidebar-muted/20 p-4 space-y-3.5 shadow-xs"},
+B.createElement("div",{className:"flex items-center gap-3"},
+B.createElement("div",{className:"p-2.5 rounded-xl bg-primary/10 text-primary flex items-center justify-center"},
+B.createElement(nq,{name:"psychology",size:22})),
+B.createElement("div",null,
+B.createElement("h3",{className:"font-semibold text-base text-foreground m-0"},"Skills & Runbooks"),
+B.createElement("p",{className:"text-xs text-muted-foreground mt-0.5 mb-0 leading-relaxed"},
+"Backup and restore custom agent skills, tools, and procedural runbooks as standard ZIP archives."))),
+B.createElement("div",{className:"space-y-1.5 pt-1"},
+B.createElement("label",{className:"block text-xs font-medium text-muted-foreground"},"Target Skill Scope:"),
+B.createElement("select",{value:selectedSkill,onChange:e=>setSelectedSkill(e.target.value),className:"w-full p-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"},
+B.createElement("option",{value:"all"},"All Skills (Complete Library)"),
+skills.map(s=>B.createElement("option",{key:s,value:s},"Skill: "+s)))),
+B.createElement("div",{className:"flex flex-wrap gap-2.5 pt-1"},
+B.createElement(sz,{variant:"primary",size:"md",disabled:isProcessing,onClick:onBackupSkills,className:"flex items-center gap-1.5"},
+B.createElement(nq,{name:"upload",size:16}),"Backup Skills (.zip)"),
+B.createElement(sz,{variant:"secondary",size:"md",disabled:isProcessing,onClick:onRestoreSkills,className:"flex items-center gap-1.5"},
+B.createElement(nq,{name:"download",size:16}),"Restore Skills (.zip)")))
+));
+};
+'''
+    content = must_replace(content, 'var UKb=', backup_restore_comp + 'var UKb=', "UKb_inject_BackupRestoreScreen")
+    return content
+
+def patch_terminal_touch_scroll(content):
+    if 'data-testid=\\"terminal-surface\\"' in content or 'data-testid="terminal-surface"' in content:
+        print("  [OK] terminal swipe-ignore already present")
+        return content
+
+    content = must_replace(
+        content,
+        'function ehb(a){return!!a?.closest("[data-base-ui-swipe-ignore]")}',
+        'function ehb(a){return!!a?.closest("[data-base-ui-swipe-ignore],.xterm,[data-testid=\\"terminal-surface\\"],[data-testid=\\"terminal-view\\"],.terminal,.xterm-scrollable-element")}',
+        "ehb_terminal_swipe_ignore"
+    )
+
+    content = must_replace(
+        content,
+        '!va||!va.closest(\'button,a,input,textarea,[role="button"],[data-base-ui-swipe-ignore],[data-swipe-ignore]\')',
+        '!va||!va.closest(\'button,a,input,textarea,[role="button"],[data-base-ui-swipe-ignore],[data-swipe-ignore],.xterm,[data-testid="terminal-surface"]\')',
+        "secondary_drawer_terminal_swipe_ignore"
+    )
+    return content
+
+
 def patch_main(file_path):
     if not os.path.isfile(file_path):
         print(f"[web-patch-2.32.1] file not found: {file_path}", file=sys.stderr)
@@ -92,7 +328,15 @@ def patch_main(file_path):
         content = f.read()
 
     if "Android.getTheme" in content and "__agMpSmartV3" in content and "__AgRootEB" in content:
-        print("[web-patch-2.32.1] main.js already patched (v2.32.1 Android UI + Smart Marketplace V3 + RootEB)")
+        if "BackupRestoreScreen" in content and ('data-testid=\\"terminal-surface\\"' in content or 'data-testid="terminal-surface"' in content):
+            print("[web-patch-2.32.1] main.js already patched (v2.32.1 Android UI + Smart Marketplace V3 + RootEB + BackupRestore + Terminal)")
+            return True
+        print("[web-patch-2.32.1] Applying BackupRestoreScreen and Terminal patches...")
+        content = patch_backup_restore(content)
+        content = patch_terminal_touch_scroll(content)
+        with open(file_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(content)
+        print("[web-patch-2.32.1] Successfully patched Backup & Restore (skills, convos, projects) and Terminal scroll into main.js!")
         return True
 
     # 1a. g_() system theme resolver via window.Android.getTheme()

@@ -18,7 +18,7 @@ if [ "$DEV_MODE" -eq 1 ]; then
     OUT_APK="$DIST_DIR/antigravity-dev.apk"
     log "  Configuring DEV edition: package=$PKG_DEV, label='$APP_NAME_DEV', port=$PORT_DEV"
 elif [ "${REGION_BYPASS:-0}" -eq 1 ]; then
-    OUT_APK="$DIST_DIR/antigravity-bypass.apk"
+    OUT_APK="$DIST_DIR/antigravity-region-bypass.apk"
     log "  Configuring RELEASE edition with REGION BYPASS: $OUT_APK"
 else
     OUT_APK="$DIST_DIR/antigravity.apk"

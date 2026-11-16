@@ -6362,7 +6362,7 @@ D]);B.useEffect(()=>{D&&(sa(),da())},[da,D,sa]);B.useEffect(()=>()=>{K?.set({swi
 oa.clientX,oa.clientY);if(!ehb(na)&&!na?.closest("[data-drawer-content]")&&oa.pointerType!=="touch")qa.onPointerDown?.(oa)}},onPointerMove(oa){if(oa.pointerType!=="touch")qa.onPointerMove?.(oa)},onPointerUp(oa){Z.current===oa.pointerType&&(Z.current="");if(oa.pointerType!=="touch")qa.onPointerUp?.(oa)},onPointerCancel(oa){Z.current===oa.pointerType&&(Z.current="");if(oa.pointerType!=="touch")qa.onPointerCancel?.(oa)},onTouchStart(oa){if(Z.current==="pen"&&T.current)T.current=!1,aa.current=!1,V.current=
 null;else if(D&&C&&!M){var na=oa.touches[0];if(na)if(fhb(oa.nativeEvent,yv(oa.currentTarget)))aa.current=!1,V.current=null;else{var ta=OG(ww(oa.currentTarget),na.clientX,na.clientY);aa.current=ehb(ta);if(aa.current)V.current=null;else{var ra=H??I;ta=Tv(oa.nativeEvent);var pa=Av(ta)?ta:null;if(ra&&pa&&!Sv(ra,pa))aa.current=!0,V.current=null;else{ta=null;var ea=!1;ra&&pa&&(ta=PG(pa,ra,L),ea=PG(pa,ra,P)!=null);ra=null;if(ta){let {offset:la,max:ja}=ghb(ta,L);ra=hhb(n,L);ra=(ra===null?0:ra?la<=0:la>=ja)?
 null:!1}V.current={startX:na.clientX,startY:na.clientY,lastX:na.clientX,lastY:na.clientY,scrollTarget:ta,hasCrossAxisScrollableContent:ea,allowSwipe:ra,preserveNativeCrossAxisScroll:!1};ua.onTouchStart?.(oa)}}}}else aa.current=!1,V.current=null},onTouchMove(oa){if(!aa.current&&!fhb(oa.nativeEvent,yv(oa.currentTarget))){var na=V.current;if(!na?.preserveNativeCrossAxisScroll&&na?.allowSwipe!==!1&&(na?.scrollTarget==null||na.allowSwipe))ua.onTouchMove?.(oa)}},onTouchEnd(oa){d();ua.onTouchEnd?.(oa)},
-onTouchCancel(oa){d();ua.onTouchCancel?.(oa)},["data-nested-dialog-open"]:void 0})},B.createElement(Kgb.Provider,{value:a},k))});function bhb(a,b){a&&(b?a.setAttribute("data-swiping",""):a.removeAttribute("data-swiping"))}function ehb(a){return!!a?.closest("[data-base-ui-swipe-ignore]")}function chb(a,b){return Math.max((b==="left"||b==="right"?a.offsetWidth:a.offsetHeight)*.5,10)}function jhb(a,b){return a instanceof b.HTMLInputElement&&a.type==="range"}
+onTouchCancel(oa){d();ua.onTouchCancel?.(oa)},["data-nested-dialog-open"]:void 0})},B.createElement(Kgb.Provider,{value:a},k))});function bhb(a,b){a&&(b?a.setAttribute("data-swiping",""):a.removeAttribute("data-swiping"))}function ehb(a){return!!a?.closest("[data-base-ui-swipe-ignore],.xterm,[data-testid=\"terminal-surface\"],[data-testid=\"terminal-view\"],.terminal,.xterm-scrollable-element")}function chb(a,b){return Math.max((b==="left"||b==="right"?a.offsetWidth:a.offsetHeight)*.5,10)}function jhb(a,b){return a instanceof b.HTMLInputElement&&a.type==="range"}
 function dhb(a,b){var c=Rv(a);if(c&&Sv(b,c)&&Av(c)&&(c.tagName==="INPUT"||c.tagName==="TEXTAREA")){var d=c.selectionStart;c=c.selectionEnd;if(d!=null&&c!=null&&d<c)return!0}a=a.getSelection?.();!a||a.isCollapsed?b=!1:(d=Av(a.anchorNode)?a.anchorNode:a.anchorNode?.parentElement,c=Av(a.focusNode)?a.focusNode:a.focusNode?.parentElement,b=a.containsNode(b,!0)||Sv(b,d)||Sv(b,c));return b}function fhb(a,b){var c=a.composedPath();return c?c.some(d=>jhb(d,b)):jhb(Tv(a),b)}
 function ghb(a,b){return b==="vertical"?{offset:a.scrollTop,max:Math.max(0,a.scrollHeight-a.clientHeight)}:{offset:a.scrollLeft,max:Math.max(0,a.scrollWidth-a.clientWidth)}}function hhb(a,b){return b==="vertical"?a==="down"?!0:a==="up"?!1:null:a==="right"?!0:a==="left"?!1:null};const khb={backdropZ:4E3,viewportZ:4001,aboveModal:!1},lhb=B.createContext({depth:0,backdropZ:0,open:!0});function mhb(a,b){var c=a.onTouchStart,d=a.onTouchMove,f=a.onTouchEnd;return B.createElement("div",{...a,onTouchMove:g=>{g.touches.length===1&&(b.current&&(b.current=!1,c?.(g)),d?.(g))},onTouchEnd:g=>{f?.(g);b.current=g.touches.length>0}})}
 function SG({open:a,onOpenChange:b,onOpenChangeComplete:c,children:d,height:f,maxHeight:g=f??"90dvh",className:h,keepMounted:k=!0,finalFocus:l,dismissibleViaModalStack:m=!0}){var n=B.useRef(null),p=B.useRef(!1),q=B.useContext(lhb),t=q.depth,u=Bgb(a),v=uSa(a,m?()=>{b(!1)}:void 0);m=jSa(v);var w=m?.stackIndex??0,x=!!m?.aboveModal,y=Math.max((x?5999:4E3)+w*10,t>0?q.backdropZ+10:0);w=Math.max((x?6E3:4001)+w*10,t>0?q.backdropZ+10+1:0);var [z,A]=B.useState(khb);!a||m===null||z.backdropZ===y&&z.viewportZ===
@@ -8856,7 +8856,7 @@ showBrowserSubagentSection:n,usesWebviewBrowserSubagent:k,browserGeneralSettings
 size:28}),B.createElement("div",{className:"flex flex-col min-w-0 flex-1"},B.createElement("span",{className:"text-foreground truncate select-none"},k),g&&h&&B.createElement("span",{className:"text-sm text-muted-foreground truncate select-none"},h)),c&&B.createElement(nq,{name:"chevron_right",size:20,className:"text-muted-foreground"}))};var eEb=B.createContext(!1),HQ=({title:a,description:b,children:c,scrollable:d=!0,headerRight:f,onBack:g})=>{var h=B.useContext(eEb);d=Gi("w-full bg-transparent",d?"h-full overflow-y-auto":"");return B.createElement("div",{className:d},B.createElement("div",{className:Gi(h?"p-4":"p-6","flex flex-col gap-4 w-full max-w-2xl mx-auto")},(a||b||f||g)&&B.createElement("div",{className:"flex flex-col gap-2 w-full mb-2 bg-transparent"},g&&B.createElement("div",{className:"flex bg-transparent"},B.createElement("button",
 {onClick:g,className:"opacity-70 hover:opacity-100 rounded-lg cursor-pointer flex items-center gap-1.5 border-none bg-transparent text-foreground h-8 px-2 shrink-0 -ml-2 transition-opacity","aria-label":"Back"},B.createElement(nq,{name:"arrow_back",size:16}),B.createElement("span",{className:"font-medium"},"Back"))),B.createElement("div",{className:Gi("flex justify-between items-start gap-4 w-full bg-transparent",h?"":"pr-8 lg:pr-0")},B.createElement("div",{className:"flex-1 flex flex-col gap-1 min-w-0 bg-transparent"},
 a&&B.createElement("h2",{className:Gi(h?"text-xl":"text-2xl","m-0 font-medium truncate flex-1 text-foreground")},a),b&&B.createElement("div",{className:"text-muted-foreground bg-transparent"},b)),f&&B.createElement("div",{className:"shrink-0"},f))),B.createElement("div",{className:"flex flex-col gap-8 w-full"},c)))};var fEb=[{screen:"General"},{screen:"Projects",label:"Projects"},{screen:"Agents",label:"Agents"},{screen:"Environments",label:"Environments"},{screen:"App",label:"Application"},{screen:"Appearance"},{screen:"Shortcuts"},{screen:"Notifications"},{screen:"Models"},{screen:"Customizations"},{screen:"Automations"},{screen:"Browser"},{screen:"Developer"},{screen:"Running"},{screen:"Jetski Chat"}],gEb="General Appearance Shortcuts Notifications Models Customizations Automations Browser Developer Running".split(" "),hEb=["App","Jetski Chat"],
-iEb=hEb.filter(a=>a!=="App"),jEb=[],kEb=[...jEb,"themeMode"];function lEb(a){return fEb.filter(b=>a.has(b.screen)).map(b=>b.screen)}const mEb=new Map([...fEb.filter(a=>a.label!==void 0).map(a=>[a.screen,a.label]),["Provide Feedback","Give Feedback"]]);function IQ(a){return mEb.get(a)??a};var JQ=({children:a})=>B.createElement("div",{className:"agy-card bg-transparent rounded-xl border border-border overflow-hidden divide-y divide-border"},a);var KQ=({label:a,description:b,rightElement:c,extraContent:d,badge:f,alignItems:g="center",unpadded:h=!1,labelId:k,descriptionId:l,disabled:m=!1,"data-testid":n})=>B.createElement("div",{"data-testid":n,"data-disabled":m?"true":void 0,className:`${h?"":"py-2 px-3"} w-full bg-transparent flex justify-between gap-4 ${g==="start"?"items-start":"items-center"}`},B.createElement("div",{className:"flex-1 flex flex-col gap-0.5"},B.createElement("div",{className:"flex items-center gap-1.5"},B.createElement("span",
+iEb=hEb.filter(a=>a!=="App"),jEb=[],kEb=[...jEb,"themeMode"];function lEb(a){return fEb.filter(b=>a.has(b.screen)).map(b=>b.screen)}const mEb=new Map([...fEb.filter(a=>a.label!==void 0).map(a=>[a.screen,a.label]),["Provide Feedback","Give Feedback"],["Backup and Restore","Backup and Restore"]]);function IQ(a){return mEb.get(a)??a};var JQ=({children:a})=>B.createElement("div",{className:"agy-card bg-transparent rounded-xl border border-border overflow-hidden divide-y divide-border"},a);var KQ=({label:a,description:b,rightElement:c,extraContent:d,badge:f,alignItems:g="center",unpadded:h=!1,labelId:k,descriptionId:l,disabled:m=!1,"data-testid":n})=>B.createElement("div",{"data-testid":n,"data-disabled":m?"true":void 0,className:`${h?"":"py-2 px-3"} w-full bg-transparent flex justify-between gap-4 ${g==="start"?"items-start":"items-center"}`},B.createElement("div",{className:"flex-1 flex flex-col gap-0.5"},B.createElement("div",{className:"flex items-center gap-1.5"},B.createElement("span",
 {className:m?"text-muted-foreground":"",id:k},a),f!==void 0&&f!==null&&B.createElement("span",{"data-testid":"settings-row-badge",className:"text-[10px] font-semibold leading-none bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-full select-none border border-border"},f)),b&&B.createElement("span",{className:"text-sm text-muted-foreground whitespace-pre-wrap",id:l},b),d&&B.createElement("div",{className:"w-full"},d)),c&&B.createElement("div",{className:"shrink-0"},c));var LQ=({title:a,subtitle:b,headerRight:c,id:d,count:f,collapsible:g=!1,defaultCollapsed:h=!1,forceExpanded:k=!1,children:l})=>{var [m,n]=(0,B.useState)(h);(0,B.useEffect)(()=>{k&&n(!1)},[k]);return B.createElement("div",{className:"space-y-2"},(a||b||c)&&B.createElement("div",{className:"flex flex-col gap-1"},B.createElement("div",{className:"flex items-center justify-between"},(()=>{var p=B.createElement(B.Fragment,null,a&&B.createElement("h3",{className:"m-0 font-medium"},a),f!==void 0&&B.createElement("span",
 {className:"text-[10px] font-semibold leading-none bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-full select-none border border-border"},f));return g?B.createElement("button",{type:"button",onClick:()=>n(!m),"aria-expanded":!m,className:"flex items-center gap-1.5 select-none cursor-pointer bg-transparent border-none p-0 m-0 text-foreground"},p,B.createElement(nq,{name:"chevron_right",className:`w-4 h-4 text-muted-foreground transition-transform ${m?"":"rotate-90"}`})):B.createElement("div",
 {className:"flex items-center gap-1.5"},p)})(),c),b&&B.createElement("div",{className:"text-sm text-muted-foreground leading-relaxed"},b)),!(g&&m)&&B.createElement("div",{id:d},l))},MQ=({children:a})=>B.createElement("div",{className:"py-2 px-3 w-full"},a);var NQ=({checked:a,onCheckedChange:b,disabled:c=!1,tooltip:d,size:f="default","data-testid":g,"aria-label":h,ariaLabel:k,"aria-labelledby":l,"aria-describedby":m})=>{var n=eC(),p=`${n}-desc`;f=f==="small";var q=!(!d||m||!(l||k||h));return B.createElement(B.Fragment,null,B.createElement("button",{type:"button",role:"switch","data-testid":g,"aria-checked":a,"aria-label":k??h??(d||void 0),"aria-labelledby":l,"aria-describedby":m??(q?p:void 0),disabled:c,"data-tooltip-id":d?n:void 0,onClick:()=>{c||b(!a)},
@@ -9405,6 +9405,171 @@ null,"What is missing in your workflow"),B.createElement("li",null,"What you wou
 null,"What quota or feature is being incorrectly limited"),B.createElement("li",null,"What functionality you expect your account tier to have available that is missing"),B.createElement("li",null,"Any error messages seen when trying to log in"))),"remote-control-issue":B.createElement(B.Fragment,null,"Use this form if you cannot connect to Remote Control. If your instance is already connected and you are experiencing issues in the browser, report directly from the Remote Control web page so that relevant logs are included. Some helpful information includes:",
 B.createElement("ul",{className:"list-disc pl-5 mt-1 space-y-0.5"},B.createElement("li",null,"Whether it never connects or is intermittent/flaky"),B.createElement("li",null,"Did restarting the desktop app help?"))),"general-feedback":"For any feedback that does not fit into the above categories."},SKb={"bug-report":"Describe the bug you encountered...","feature-request":"Describe the feature you would like to see...","auth-and-billing":"Describe your auth or billing issue...","remote-control-issue":"Describe your Remote Control issue...",
 "general-feedback":"Enter your feedback here..."},TKb=Object.keys(QKb);
+var BackupRestoreScreen=()=>{
+var [status,setStatus]=(0,B.useState)(null);
+var [isProcessing,setIsProcessing]=(0,B.useState)(!1);
+var [projects,setProjects]=(0,B.useState)([]);
+var [selectedProject,setSelectedProject]=(0,B.useState)("all");
+var [skills,setSkills]=(0,B.useState)([]);
+var [selectedSkill,setSelectedSkill]=(0,B.useState)("all");
+var [conversations,setConversations]=(0,B.useState)([]);
+var [selectedConversation,setSelectedConversation]=(0,B.useState)("all");
+var [showRestartPrompt,setShowRestartPrompt]=(0,B.useState)(!1);
+var [restartMessage,setRestartMessage]=(0,B.useState)("");
+(0,B.useEffect)(()=>{
+try{
+if(typeof window!=="undefined"&&window.Android&&typeof window.Android.listProjects==="function"){
+var pList=JSON.parse(window.Android.listProjects()||"[]");
+if(Array.isArray(pList))setProjects(pList);
+}
+}catch(_){}
+try{
+if(typeof window!=="undefined"&&window.Android&&typeof window.Android.listSkills==="function"){
+var sList=JSON.parse(window.Android.listSkills()||"[]");
+if(Array.isArray(sList))setSkills(sList);
+}
+}catch(_){}
+try{
+if(typeof window!=="undefined"&&window.Android&&typeof window.Android.listConversations==="function"){
+var cList=JSON.parse(window.Android.listConversations()||"[]");
+if(Array.isArray(cList))setConversations(cList);
+}
+}catch(_){}
+if(typeof window!=="undefined"){
+window.__onBackupRestoreStatus=function(res){
+setIsProcessing(!1);
+if(typeof res==="string"){try{res=JSON.parse(res)}catch(_){res={message:res}}}
+setStatus(res);
+if(res&&res.success&&(res.type==="restore_conversation"||res.type==="restore_projects"||res.type==="restore_skills")){
+setRestartMessage(res.type==="restore_conversation"?"Conversations restored successfully. Would you like to restart the app now to reload all conversations?":res.type==="restore_skills"?"Skills restored successfully. Would you like to restart the app now to reload custom skills?":"Projects restored successfully. Would you like to restart the app now to reload your workspace?");
+setShowRestartPrompt(!0);
+}
+};
+return function(){
+if(typeof window!=="undefined")window.__onBackupRestoreStatus=null;
+};
+}
+},[]);
+var onBackupConvos=()=>{
+setIsProcessing(!0);
+setStatus({type:"info",message:"Opening file picker to choose backup location..."});
+try{
+if(window.Android&&typeof window.Android.backupConversations==="function")window.Android.backupConversations();
+else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
+}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
+};
+var onRestoreConvos=()=>{
+setIsProcessing(!0);
+setStatus({type:"info",message:"Opening file picker to select backup archive..."});
+try{
+if(window.Android&&typeof window.Android.restoreConversations==="function")window.Android.restoreConversations();
+else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
+}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
+};
+var onBackupProj=()=>{
+setIsProcessing(!0);
+setStatus({type:"info",message:"Opening file picker to save project ZIP..."});
+try{
+if(window.Android&&typeof window.Android.backupProjects==="function")window.Android.backupProjects(selectedProject);
+else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
+}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
+};
+var onRestoreProj=()=>{
+setIsProcessing(!0);
+setStatus({type:"info",message:"Opening file picker to select project ZIP..."});
+try{
+if(window.Android&&typeof window.Android.restoreProjects==="function")window.Android.restoreProjects(selectedProject!=="all"?selectedProject:"");
+else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
+}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
+};
+var onBackupSkills=()=>{
+setIsProcessing(!0);
+setStatus({type:"info",message:"Opening file picker to save skills ZIP..."});
+try{
+if(window.Android&&typeof window.Android.backupSkills==="function")window.Android.backupSkills(selectedSkill);
+else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
+}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
+};
+var onRestoreSkills=()=>{
+setIsProcessing(!0);
+setStatus({type:"info",message:"Opening file picker to select skills ZIP..."});
+try{
+if(window.Android&&typeof window.Android.restoreSkills==="function")window.Android.restoreSkills(selectedSkill!=="all"?selectedSkill:"");
+else{setIsProcessing(!1);setStatus({type:"error",message:"Android native bridge unavailable."})}
+}catch(err){setIsProcessing(!1);setStatus({type:"error",message:err.message||String(err)})}
+};
+return B.createElement(HQ,{title:IQ("Backup and Restore")},
+B.createElement("div",{className:"space-y-6 max-w-2xl pb-8 p-1 relative"},
+showRestartPrompt&&B.createElement("div",{className:"fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in"},
+B.createElement("div",{className:"w-full max-w-sm rounded-2xl border border-border bg-popover p-5 space-y-4 shadow-xl text-popover-foreground"},
+B.createElement("div",{className:"space-y-1.5"},
+B.createElement("h3",{className:"text-base font-semibold m-0 text-foreground"},"Restart Required"),
+B.createElement("p",{className:"text-sm text-muted-foreground m-0 leading-relaxed"},restartMessage||"Restoration completed successfully. Would you like to restart the app now to apply all changes?")),
+B.createElement("div",{className:"flex items-center justify-end gap-2.5 pt-2"},
+B.createElement(sz,{variant:"secondary",size:"md",onClick:()=>setShowRestartPrompt(!1)},"Cancel"),
+B.createElement(sz,{variant:"primary",size:"md",onClick:()=>{
+setShowRestartPrompt(!1);
+try{if(window.Android&&typeof window.Android.restartApp==="function")window.Android.restartApp()}
+catch(_){}
+}},"OK")))),
+status&&B.createElement("div",{className:Gi("p-3 rounded-xl border text-sm flex items-start gap-2.5 transition-all shadow-sm",
+status.success?"bg-emerald-500/10 border-emerald-500/30 text-emerald-300":
+status.type==="info"?"bg-sky-500/10 border-sky-500/30 text-sky-300":
+"bg-red-500/10 border-red-500/30 text-red-300")},
+B.createElement(nq,{name:status.success?"check_circle":status.type==="info"?"info":"error",size:18,className:"shrink-0 mt-0.5"}),
+B.createElement("div",{className:"flex-1"},B.createElement("div",{className:"font-medium"},status.title||(status.success?"Success":status.type==="info"?"Processing":"Notice")),status.message&&B.createElement("div",{className:"text-xs opacity-90 mt-0.5"},status.message)),
+B.createElement("button",{type:"button",onClick:()=>setStatus(null),className:"text-xs opacity-60 hover:opacity-100 p-1 border-none bg-transparent cursor-pointer text-inherit"},"✕")),
+B.createElement("div",{className:"rounded-2xl border border-border bg-sidebar-muted/20 p-4 space-y-3.5 shadow-xs"},
+B.createElement("div",{className:"flex items-center gap-3"},
+B.createElement("div",{className:"p-2.5 rounded-xl bg-primary/10 text-primary flex items-center justify-center"},
+B.createElement(nq,{name:"forum",size:22})),
+B.createElement("div",null,
+B.createElement("h3",{className:"font-semibold text-base text-foreground m-0"},"Conversations & Trajectories"),
+B.createElement("p",{className:"text-xs text-muted-foreground mt-0.5 mb-0 leading-relaxed"},
+"Fast, compressed archive of conversation history, transcripts, and brain artifacts (.zip). Space-saving and complete."))),
+B.createElement("div",{className:"flex flex-wrap gap-2.5 pt-1"},
+B.createElement(sz,{variant:"primary",size:"md",disabled:isProcessing,onClick:onBackupConvos,className:"flex items-center gap-1.5"},
+B.createElement(nq,{name:"upload",size:16}),"Backup Conversations"),
+B.createElement(sz,{variant:"secondary",size:"md",disabled:isProcessing,onClick:onRestoreConvos,className:"flex items-center gap-1.5"},
+B.createElement(nq,{name:"download",size:16}),"Restore Conversations"))),
+B.createElement("div",{className:"rounded-2xl border border-border bg-sidebar-muted/20 p-4 space-y-3.5 shadow-xs"},
+B.createElement("div",{className:"flex items-center gap-3"},
+B.createElement("div",{className:"p-2.5 rounded-xl bg-primary/10 text-primary flex items-center justify-center"},
+B.createElement(nq,{name:"folder_zip",size:22})),
+B.createElement("div",null,
+B.createElement("h3",{className:"font-semibold text-base text-foreground m-0"},"Project Files"),
+B.createElement("p",{className:"text-xs text-muted-foreground mt-0.5 mb-0 leading-relaxed"},
+"Backup and restore workspace projects as standard ZIP archives."))),
+B.createElement("div",{className:"space-y-1.5 pt-1"},
+B.createElement("label",{className:"block text-xs font-medium text-muted-foreground"},"Target Project Scope:"),
+B.createElement("select",{value:selectedProject,onChange:e=>setSelectedProject(e.target.value),className:"w-full p-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"},
+B.createElement("option",{value:"all"},"All Scratch Projects (Complete Workspace)"),
+projects.map(p=>B.createElement("option",{key:p,value:p},"Project: "+p)))),
+B.createElement("div",{className:"flex flex-wrap gap-2.5 pt-1"},
+B.createElement(sz,{variant:"primary",size:"md",disabled:isProcessing,onClick:onBackupProj,className:"flex items-center gap-1.5"},
+B.createElement(nq,{name:"upload",size:16}),"Backup Projects (.zip)"),
+B.createElement(sz,{variant:"secondary",size:"md",disabled:isProcessing,onClick:onRestoreProj,className:"flex items-center gap-1.5"},
+B.createElement(nq,{name:"download",size:16}),"Restore Projects (.zip)"))),
+B.createElement("div",{className:"rounded-2xl border border-border bg-sidebar-muted/20 p-4 space-y-3.5 shadow-xs"},
+B.createElement("div",{className:"flex items-center gap-3"},
+B.createElement("div",{className:"p-2.5 rounded-xl bg-primary/10 text-primary flex items-center justify-center"},
+B.createElement(nq,{name:"psychology",size:22})),
+B.createElement("div",null,
+B.createElement("h3",{className:"font-semibold text-base text-foreground m-0"},"Skills & Runbooks"),
+B.createElement("p",{className:"text-xs text-muted-foreground mt-0.5 mb-0 leading-relaxed"},
+"Backup and restore custom agent skills, tools, and procedural runbooks as standard ZIP archives."))),
+B.createElement("div",{className:"space-y-1.5 pt-1"},
+B.createElement("label",{className:"block text-xs font-medium text-muted-foreground"},"Target Skill Scope:"),
+B.createElement("select",{value:selectedSkill,onChange:e=>setSelectedSkill(e.target.value),className:"w-full p-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"},
+B.createElement("option",{value:"all"},"All Skills (Complete Library)"),
+skills.map(s=>B.createElement("option",{key:s,value:s},"Skill: "+s)))),
+B.createElement("div",{className:"flex flex-wrap gap-2.5 pt-1"},
+B.createElement(sz,{variant:"primary",size:"md",disabled:isProcessing,onClick:onBackupSkills,className:"flex items-center gap-1.5"},
+B.createElement(nq,{name:"upload",size:16}),"Backup Skills (.zip)"),
+B.createElement(sz,{variant:"secondary",size:"md",disabled:isProcessing,onClick:onRestoreSkills,className:"flex items-center gap-1.5"},
+B.createElement(nq,{name:"download",size:16}),"Restore Skills (.zip)")))
+));
+};
 var UKb=B.memo(function(){var a=Ak(kr),b=PKb(),c=ju(),d=eC(),f=eC(),g=eC(),h=eC(),[k,l]=(0,B.useState)(""),[m,n]=(0,B.useState)(""),[p,q]=(0,B.useState)(TKb[0]),[t,u]=(0,B.useState)(!0),[v,w]=(0,B.useState)(!1),[x,y]=(0,B.useState)(!0),[z,A]=(0,B.useState)({type:"",message:""}),[D,C]=(0,B.useState)(),F=(0,B.useRef)(null),G=xB().product,H=!!G.isGoogleInternal,I=oj().get("feedback"),K=I?.listnrProductId??"5372208",M=I?.ideName??G.applicationName;G=G.version||"unknown";I=I?.getMetadata?.();var L=I?.productVersion??
 G,N=I?.fields??{},P={ideVersion:G,...N},O=MKb(k,10);I=O.problem==="too-short"?"Please provide a more detailed description (at least 10 characters).":void 0;var Q=p==="bug-report",R=MKb(m,5);G=Q?R.problem==="too-short"?"Please provide more detailed steps to reproduce (at least 5 characters).":void 0:void 0;O=O.valid&&(!Q||R.valid);Q=S=>{n(S.target.value)};R=()=>{C(void 0);F.current&&(F.current.value="")};var U=()=>{var S=[];S.push({key:"ideName",value:M,type:1});for(let [Z,T]of Object.entries(P))S.push({key:Z,
 value:T,type:1});S.push({key:"feedbackType",value:QKb[p],type:1});S.push({key:"userEmail",value:t?a.email:"",type:1});return S},W=async S=>{var Z=e,T=e;try{let Y;if(x&&S)try{try{let ba=JSON.parse(S);var aa=JSON.stringify(LKb(ba))}catch{aa=KKb(S)}S=aa;var V=(new TextEncoder).encode(S),X=(new Blob([V])).stream().pipeThrough(new CompressionStream("gzip"));let fa=new Response(X),da=T(await Z(fa.arrayBuffer())),ca=new Uint8Array(da);V="";for(X=0;X<ca.length;X+=32768)V+=String.fromCharCode(...ca.subarray(X,
@@ -9857,10 +10022,10 @@ var yU=a=>(a=oPb(a))?!a.disabled:!1,zU=(a,b)=>{var c=oPb(a),[d,f]=(0,B.useState)
 var qPb=()=>{var a=oj(),b=yU("enable-jetski-chat"),c=a.get("notificationsSettings")??!1,d=AKb(),{showBrowserSettingsScreen:f}=cEb(),g=Lk(),h=GQ(),k=!!g.enabledScreens?.length,l=a.get("settings"),m=$I(Di.filter(p=>!!pPb(g,p))),n=(0,B.useMemo)(()=>{var p=l?.extraScreens??[];return lEb(new Set([...gEb,...p,...m])).filter(q=>a.settings.isScreenVisible(q))},[l,a,m]);return(0,B.useMemo)(()=>{var p=n,q=a.runtimeEnvironment.userCohort==="google";f||(p=p.filter(t=>t!=="Browser"));c||(p=p.filter(t=>t!=="Notifications"));
 b&&q||(p=p.filter(t=>t!=="Jetski Chat"));if(a.get("settings")?.hideShortcuts||a.get("keybindings")?.enabled===!1)p=p.filter(t=>t!=="Shortcuts");d?.enabled||(p=p.filter(t=>t!=="Developer"));a.get("runningItems")?.enabled||(p=p.filter(t=>t!=="Running"));k&&(p=p.filter(t=>Di.includes(t)||t==="Browser"||t==="Shortcuts"||t==="Running"||h.has(t)));return p},[n,h,k,b,a,c,d,f])};const rPb=["Account"];var sPb=()=>{var a=Lk(),b=GQ(),c=!!a.enabledScreens?.length,{authorities:d}=JT();a=(0,B.useMemo)(()=>{var k=[];for(let l of d)for(let m of l.workspaces)k.push({...m,authority:l.authority});return k},[d]);var f=qPb(),g=(0,B.useMemo)(()=>c?rPb.filter(k=>b.has(k)):rPb,[b,c]),h=(0,B.useMemo)(()=>f.filter(k=>k!=="Provide Feedback"),[f]);return{sharedNavItems:g,globalScreens:h,workspaces:a,showWorkspacesSection:a.length>0}};function tPb(){var a=AA()?.internalModalsOnboarding?.JetskiChatScreen;return a?B.createElement(a,null):null}function uPb({screen:a}){a=pPb(Lk(),a);var b=Ak(uu);return a?B.createElement(a,{navigation:b}):null}
 function vPb(a){if(Di.includes(a))return B.createElement(uPb,{screen:a});switch(a){case "Account":return B.createElement(uGb,null);case "General":return B.createElement(POb,{isActive:!0});case "Appearance":return B.createElement(XIb,null);case "Notifications":return B.createElement(cLb,null);case "Customizations":return B.createElement(mPb,null);case "Automations":return B.createElement(r$c,{automationPage:!0});case "Browser":return B.createElement(aJb,null);case "App":return B.createElement(WIb,null);case "Shortcuts":return B.createElement(BMb,null);case "Models":return B.createElement(aLb,
-{isActive:!0});case "Developer":return B.createElement(BKb,null);case "Running":return B.createElement(hMb,null);case "Jetski Chat":return B.createElement(tPb,null);case "Provide Feedback":return B.createElement(UKb,null);default:return null}}
+{isActive:!0});case "Developer":return B.createElement(BKb,null);case "Running":return B.createElement(hMb,null);case "Jetski Chat":return B.createElement(tPb,null);case "Provide Feedback":return B.createElement(UKb,null);case "Backup and Restore":return B.createElement(BackupRestoreScreen,null);default:return null}}
 function wPb({text:a,label:b,onClick:c}){return B.createElement("button",{type:"button","data-testid":`settings-nav-item-${a}`,className:Gi("flex items-center gap-1.5 group mx-1 px-3 py-2.5 rounded-lg cursor-pointer","border-none bg-transparent text-left outline-none transition-colors","hover:bg-sidebar-muted"),onClick:c},B.createElement("span",{className:"flex-1 truncate text-foreground select-none"},b??a),B.createElement(nq,{name:"chevron_right",size:20,className:"text-muted-foreground"}))}
 function xPb({text:a}){return B.createElement("div",{className:"px-4 pt-3 pb-1"},B.createElement("h2",{className:"m-0 text-sm font-medium text-muted-foreground select-none"},a))}function yPb({onBack:a}){return B.createElement("div",{className:"sticky top-0 z-10 flex items-center border-b border-border bg-background px-1 py-1"},B.createElement(sz,{type:"button",variant:"ghost",size:"md","aria-label":"Back",onClick:a},B.createElement(nq,{name:"chevron_left",size:20}),"Back"))}
-var zPb=()=>{var a=zk(),b=oj().settings.isScreenVisible("Provide Feedback"),{sharedNavItems:c,globalScreens:d,workspaces:f,showWorkspacesSection:g}=sPb();b=[...c.filter(p=>p!=="Account"),...d,...(b?["Provide Feedback"]:[])];var h=oOb(!0),k=h.path.length,l=k===0,m=h.path[0]??h.exiting[0],n=m?.startsWith("workspace:");return B.createElement("div",{ref:h.setHost,className:"relative h-full w-full overflow-hidden"},B.createElement(YT,{offset:-k,active:l,depth:0,footer:c.includes("Account")?B.createElement("div",
+var zPb=()=>{var a=zk(),b=oj().settings.isScreenVisible("Provide Feedback"),{sharedNavItems:c,globalScreens:d,workspaces:f,showWorkspacesSection:g}=sPb();b=[...c.filter(p=>p!=="Account"),...d,...(b?["Provide Feedback"]:[]),"Backup and Restore"];var h=oOb(!0),k=h.path.length,l=k===0,m=h.path[0]??h.exiting[0],n=m?.startsWith("workspace:");return B.createElement("div",{ref:h.setHost,className:"relative h-full w-full overflow-hidden"},B.createElement(YT,{offset:-k,active:l,depth:0,footer:c.includes("Account")?B.createElement("div",
 {className:"flex flex-col border-t border-border p-1"},B.createElement(dEb,{showChevron:!0,className:"mx-1 px-3 py-2.5",onClick:()=>{a(ou("Account"));h.push("Account")}})):void 0},B.createElement(xPb,{text:"Settings"}),b.map(p=>B.createElement(wPb,{key:p,text:p,label:IQ(p),onClick:()=>{a(ou(p));h.push(p)}})),g&&B.createElement(B.Fragment,null,B.createElement(xPb,{text:"Workspaces"}),f.map(p=>B.createElement(wPb,{key:p.uri,text:p.name,onClick:()=>{var q=p.uri;a(lRa({workspaceUri:q}));h.push(`workspace:${q}`)}})))),
 m&&B.createElement(YT,{offset:1-k,active:k===1,depth:1,exiting:h.exiting.includes(m),onExited:()=>{h.onExited(m)},header:B.createElement(yPb,{onBack:h.pop})},B.createElement(eEb.Provider,{value:!0},n?B.createElement(iNb,null):vPb(m))))};function APb(){var a=Ak(qu),b=Ak(ru),c=Ak(tu),d=Ak(su);c=d||c;var f=yl(c?c:void 0)??"Project";return b?["Workspaces",Lq(b)]:c&&c!=="outside-of-project"?["Projects",f]:d==="outside-of-project"?["Not in Project","Conversations"]:["Settings",IQ(a)]};var BPb=({projectId:a})=>{var b=Gm(),c=Pk(),d=(0,B.useMemo)(()=>a?c.getProjectStateProvider(a):void 0,[a,c]),f=Ek(d),g=(0,B.useMemo)(()=>{if(f){let p=(f.project?.projectResources?.resources??[]).find(q=>q.type?.case==="google3");if(p&&p.type.case==="google3")return p.type.value.forkType}return 0},[f]),[h,k]=(0,B.useState)(g),[l,m]=(0,B.useState)(g);g!==h&&(k(g),m(g));var n=ju();d=(0,B.useCallback)(async p=>{var q=e,t=e;try{m(p);try{if(a&&f?.project){let u=(f.project.projectResources?.resources??[]).map(w=>
 w.type.case==="google3"?Vb(Jh,{type:{case:"google3",value:{...w.type.value,forkType:p}}}):w),v=Vb(Mh,{...f.project,projectResources:Vb(Kh,{resources:u})});t(await q(c.updateProject(v)))}}catch(u){t(),m(g),n(xg.PROJECT_GOOGLE3_CONFIG_SAVE_FAILED,u),b({title:`Failed to save project Google3 configuration: ${zn(u)}`,tag:"project-forktype-save-error"})}}finally{q()}},[a,c,f,g,b,n]);return{forkType:l,setForkType:d}};var CPb=({projectId:a})=>{var {forkType:b,setForkType:c}=BPb({projectId:a});a=(0,B.useMemo)(()=>{switch(b){case 1:return"Piper";case 2:return"JJ";default:return"Fig"}},[b]);return B.createElement(JR,{nativeOnMobile:!0,label:"CitC Workspace Type",description:"Select the workspace type that will be used for new conversations started with the New Workspace option.",value:a,options:[3,1,2],displayResolver:d=>d===1?"Piper":d===2?"JJ":"Fig",onSelect:d=>void c(d),wide:!0})};function DPb(a,b){a=(a.variables??[]).map(d=>({name:d.name,title:d.title||d.name,description:d.description||void 0,link:d.link||void 0}));var c={};if(b)for(let d of a)b[d.name]!==void 0&&(c[d.name]=b[d.name]);return{variables:a,initialValues:c}}
@@ -10076,7 +10241,7 @@ onClick:()=>{M(ou(N))},isActive:L&&c===N}))),l&&B.createElement(B.Fragment,null,
 B.createElement("h2",{className:"m-0 text-sm font-medium text-muted-foreground select-none"},"Projects")),B.createElement("div",{className:"flex flex-col gap-0.5"},I.map(N=>B.createElement(XRb,{key:N,projectId:N})),H.length>3&&B.createElement("button",{type:"button",className:"text-sm text-muted-foreground hover:text-foreground mx-4 py-1 cursor-pointer border-none bg-transparent text-left transition-colors select-none hover:underline font-medium outline-none",onClick:()=>{w(!v)}},v?"Show Less":"Show All"))),
 q&&B.createElement(B.Fragment,null,B.createElement("div",{className:"px-4 mt-2"},B.createElement("h2",{className:"m-0 text-sm font-medium text-muted-foreground select-none"},"Not in Project")),B.createElement("div",{className:"flex flex-col gap-0.5"},B.createElement(rV,{text:"Conversations",onClick:()=>{M(pu({projectId:"outside-of-project"}))},isActive:u==="outside-of-project"}))),B.createElement("div",{className:"flex-1"}),A&&B.createElement(rV,{text:"Provide Feedback",label:IQ("Provide Feedback"),
 onClick:()=>{M(ou("Provide Feedback"))},isActive:L&&c==="Provide Feedback",rightAction:D?B.createElement(B.Fragment,null,B.createElement("button",{type:"button","aria-label":"Upload Debug Bundle","data-tooltip-id":F,"data-testid":"settings-upload-debug-bundle-button",onClick:N=>{N.stopPropagation();y(!0)},className:"flex items-center justify-center w-6 h-6 rounded-md text-secondary-foreground hover:bg-sidebar-secondary hover:text-foreground transition-all cursor-pointer border-none bg-transparent"},
-B.createElement(nq,{name:"upload",size:16})),B.createElement(qz,{id:F,place:"right"},"Upload Debug Bundle")):void 0}),a&&B.createElement(VRb,{versionInfo:a})),K&&B.createElement("div",{className:"flex flex-col border-t border-solid border-sidebar-border py-2"},B.createElement(dEb,{isActive:L&&c==="Account",onClick:()=>{M(ou("Account"))}})),D&&x&&C&&z&&B.createElement(z,{isOpen:x,onClose:()=>{y(!1)}}))});
+B.createElement(nq,{name:"upload",size:16})),B.createElement(qz,{id:F,place:"right"},"Upload Debug Bundle")):void 0}),B.createElement(rV,{text:"Backup and Restore",label:IQ("Backup and Restore"),onClick:()=>{M(ou("Backup and Restore"))},isActive:L&&c==="Backup and Restore"}),a&&B.createElement(VRb,{versionInfo:a})),K&&B.createElement("div",{className:"flex flex-col border-t border-solid border-sidebar-border py-2"},B.createElement(dEb,{isActive:L&&c==="Account",onClick:()=>{M(ou("Account"))}})),D&&x&&C&&z&&B.createElement(z,{isOpen:x,onClose:()=>{y(!1)}}))});
 const rV=({text:a,label:b,onClick:c,isActive:d,rightAction:f,className:g})=>B.createElement("div",{className:Gi("relative group/nav-item mx-2",g)},B.createElement("button",{type:"button","data-testid":`settings-nav-item-${a}`,className:Gi("flex items-center gap-1.5 w-full px-2 py-1 rounded-lg cursor-pointer border-none text-left transition-all outline-none",f?"pr-8":"",d?"bg-sidebar-secondary":"hover:bg-sidebar-muted"),onClick:c},B.createElement("span",{className:Gi("transition-colors select-none truncate flex-1",
 d?"text-foreground":"text-secondary-foreground group-hover/nav-item:text-foreground")},b??a)),f&&B.createElement("div",{className:"absolute right-1 top-1/2 -translate-y-1/2 flex items-center"},f)),XRb=({projectId:a})=>{var b=yl(a),c=Ak(su),d=Pk(),f=zk();c=c===a;d=a?d.getProjectStateProvider(a):void 0;return Ek(d)?.project?.isWorkspaceOnly?null:B.createElement(rV,{text:b??"Project",onClick:()=>{a&&f(pu({projectId:a}))},isActive:c})};function ZRb(){var a=Ak(qu),b=Ak(ru),c=Ak(su),d=JSON.stringify([a,b,c]),[f,g]=(0,B.useState)(null);a=f===d;b=APb();return B.createElement(B.Fragment,null,B.createElement("div",{className:"h-12 w-full bg-background flex items-center px-16 shrink-0 z-20"},B.createElement("div",{className:"flex items-center gap-1.5 select-none"},b.map((h,k,l)=>B.createElement(B.Fragment,{key:h},B.createElement("span",{className:"text-sm font-medium text-muted-foreground"},h),k<l.length-1&&B.createElement(nq,{name:"chevron_right",
 size:14,className:"text-muted-foreground/60 shrink-0"}))))),B.createElement("button",{onClick:()=>{g(d)},className:"absolute top-2 left-4 z-30 p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors","aria-label":"Open settings menu"},B.createElement(nq,{name:"menu",size:20})),a&&B.createElement(B.Fragment,null,B.createElement("div",{className:"absolute inset-0 bg-black/45 z-40 transition-opacity animate-in fade-in",onClick:()=>{g(null)}}),B.createElement("div",
@@ -10104,7 +10269,7 @@ q?u?"clip-path 500ms var(--ease-expo-out)":k?"width 500ms var(--ease-expo-out), 
 sizingStrategy:{size:k?0:200,for:"first"},first:!k&&B.createElement(YRb,null),second:B.createElement("div",{className:"relative w-full h-full min-h-0 flex-grow flex flex-col"},B.createElement("div",{ref:w,onScroll:u,className:"flex w-full h-full overflow-auto min-h-0",style:{maskImage:t.top&&t.bottom?"linear-gradient(to bottom, transparent, black 8px, black calc(100% - 8px), transparent)":t.top?"linear-gradient(to bottom, transparent, black 8px)":t.bottom?"linear-gradient(to bottom, black calc(100% - 8px), transparent)":
 void 0}},B.createElement("div",{className:"grow w-full"},B.createElement(YDb,null),d?B.createElement(iNb,null):B.createElement(B.Fragment,null,f&&B.createElement("div",{style:{display:c==="Project General"||c==="Project Folders"||c==="Project Agent"?"block":"none"}},B.createElement(URb,null)),B.createElement("div",{style:{display:c==="Account"?"block":"none"}},B.createElement(uGb,null)),B.createElement("div",{style:{display:c==="General"?"block":"none"}},B.createElement(POb,{targetSection:a,isActive:c===
 "General"})),B.createElement("div",{style:{display:c==="Appearance"?"block":"none"}},B.createElement(XIb,null)),p&&B.createElement(p,{key:c,navigation:n}),h&&B.createElement("div",{style:{display:g&&c==="Jetski Chat"?"block":"none"}},B.createElement(h,null)),B.createElement("div",{style:{display:c==="Notifications"?"block":"none"}},B.createElement(cLb,null)),B.createElement("div",{style:{display:c==="Customizations"?"block":"none"}},B.createElement(mPb,null)),B.createElement("div",{style:{display:c==="Automations"?"block":"none"}},B.createElement(r$c,{automationPage:!0})),m&&B.createElement("div",{style:{display:c===
-"Browser"?"block":"none"}},B.createElement(aJb,null)),B.createElement("div",{style:{display:c==="App"?"block":"none"}},B.createElement(WIb,null)),l&&B.createElement("div",{style:{display:c==="Provide Feedback"?"block":"none"}},B.createElement(UKb,null)),B.createElement("div",{style:{display:c==="Shortcuts"?"block":"none"}},B.createElement(BMb,null)),B.createElement("div",{style:{display:c==="Models"?"block":"none"}},B.createElement(aLb,{isActive:c==="Models"})),B.createElement("div",{style:{display:c===
+"Browser"?"block":"none"}},B.createElement(aJb,null)),B.createElement("div",{style:{display:c==="App"?"block":"none"}},B.createElement(WIb,null)),l&&B.createElement("div",{style:{display:c==="Provide Feedback"?"block":"none"}},B.createElement(UKb,null)),B.createElement("div",{style:{display:c==="Backup and Restore"?"block":"none"}},B.createElement(BackupRestoreScreen,null)),B.createElement("div",{style:{display:c==="Shortcuts"?"block":"none"}},B.createElement(BMb,null)),B.createElement("div",{style:{display:c==="Models"?"block":"none"}},B.createElement(aLb,{isActive:c==="Models"})),B.createElement("div",{style:{display:c===
 "Developer"?"block":"none"}},B.createElement(BKb,null)),c==="Running"&&B.createElement(hMb,null)))),B.createElement(eV,{viewportRef:v}))})))};const jSb=({targetScreen:a,targetProjectId:b,targetSection:c,isOpen:d})=>{var f=zk(),{refresh:g}=qC();(0,B.useEffect)(()=>{d&&(g(),b?(f(mRa(b)),f(pu({projectId:b})),a&&f(ou(a))):a?f(ou(a)):f(ou("Account")))},[a,b,f,d,g]);return B.createElement("div",{className:"h-full w-full bg-background text-foreground overflow-hidden"},B.createElement(iSb,{targetSection:c}))};function kSb({portalContainerRef:a,children:b}){return B.createElement(Du,{containerRef:a},b)}
 function lSb({isOpen:a,onClose:b,onClosed:c,children:d}){var f=(0,B.useRef)(null);return B.createElement(SG,{open:a,onOpenChange:g=>{g||b()},onOpenChangeComplete:g=>{g||c?.()},height:"95dvh"},B.createElement("div",{ref:f,className:"relative flex min-h-0 flex-1 flex-col"},d?B.createElement(kSb,{portalContainerRef:f},d):null))}
 function mSb({isOpen:a,onClose:b,isAnimatingOut:c,onAnimationEnd:d,modalFullScreen:f,showAvatarSpacer:g,children:h}){var k=(0,B.useRef)(null),l=(0,B.useRef)(null),m=Ru(a,b);return B.createElement(wz,{open:a,onOpenChange:(n,p)=>{n||Tu(p,m,k.current,l.current)||b()}},B.createElement(vz,{container:typeof document!=="undefined"?document.getElementById("root")??document.body:void 0,keepMounted:!0},B.createElement("div",{ref:k,className:Gi("fixed inset-0 z-[5000] flex items-center justify-center settings-modal-backdrop",
@@ -14062,7 +14227,7 @@ g=k.transitionStatus!=="ending"&&k.type!=="loading"&&f>0;var m=this.JSC$15454_ti
 d;this.JSC$15454_timers.forEach(l=>{l.timeout?.clear()});this.JSC$15454_timers.clear()}else{g=C2.toast(this.state,b);if(!g)return;g=[g];var h=this.JSC$15454_timers.get(b);h?.timeout&&(h.timeout.clear(),this.JSC$15454_timers.delete(b))}var k=0;h=d.map(l=>{if(c||l.id===b)return{...l,transitionStatus:"ending",height:0};if(l.transitionStatus==="ending")return l;var m=k>=f;k+=1;return l.limited!==m?{...l,limited:m}:l});h={toasts:h,toastMetadata:Xrc(h)};if(c||d.length===1)h.hovering=!1,h.focused=!1;this.update(h);
 g.forEach(l=>{if(l.transitionStatus!=="ending")l.onClose?.()});$rc(this,b)};this.promiseToast=(b,c)=>{var d=Wrc(c.loading),f=this.addToast({...d,type:"loading"});b=b.then(g=>{var h=Wrc(c.success,g);this.updateToast(f,{...h,type:"success",timeout:h.timeout});return g}).catch(g=>{var h=Wrc(c.error,g);this.updateToast(f,{...h,type:"error",timeout:h.timeout});return Promise.reject(g)});({}).hasOwnProperty.call(c,"setPromise")&&c.setPromise(b);return b};this.handleDocumentPointerDown=b=>{b.pointerType===
 "touch"&&(b=Tv(b),Sv(this.state.viewport,b)||(G2(this),this.update({hovering:!1,focused:!1})))}}setFocused(a){this.set("focused",a)}};"use client";"use client";const bsc={...mv,swipeDirection(a){return a?{"data-swipe-direction":a}:null}};
-var csc=B.forwardRef(function(a,b){function c(ja){ha.current=ja;M(ja)}function d(ja){if(ja.button===0){ja.pointerType==="touch"&&E2(t);var va=Tv(ja.nativeEvent);if(!va||!va.closest('button,a,input,textarea,[role="button"],[data-base-ui-swipe-ignore],[data-swipe-ignore]'))if(da.current=!1,Y.current=void 0,fa.current=0,qa.current=ja.pointerId,V.current={x:ja.clientX,y:ja.clientY},ca.current=V.current,aa.current&&(va=Tgb(aa.current),X.current=va,P(va),c({x:va.x,y:va.y})),H2(t,!0),z(!0),F(!1),T(null),
+var csc=B.forwardRef(function(a,b){function c(ja){ha.current=ja;M(ja)}function d(ja){if(ja.button===0){ja.pointerType==="touch"&&E2(t);var va=Tv(ja.nativeEvent);if(!va||!va.closest('button,a,input,textarea,[role="button"],[data-base-ui-swipe-ignore],[data-swipe-ignore],.xterm,[data-testid="terminal-surface"]'))if(da.current=!1,Y.current=void 0,fa.current=0,qa.current=ja.pointerId,V.current={x:ja.clientX,y:ja.clientY},ca.current=V.current,aa.current&&(va=Tgb(aa.current),X.current=va,P(va),c({x:va.x,y:va.y})),H2(t,!0),z(!0),F(!1),T(null),
 ba.current=!0,va=aa.current){ua.current?.abort();let ya=new AbortController;ua.current=ya;let Da=ww(va);Da.addEventListener("pointerup",ea,{signal:ya.signal});Da.addEventListener("pointercancel",ea,{signal:ya.signal});va.setPointerCapture?.(ja.pointerId)}}}function f(ja){if(ja.pointerId===qa.current){ja.preventDefault();ba.current&&(V.current={x:ja.clientX,y:ja.clientY},ba.current=!1);var va=ja.clientY,ya=ja.clientX;var Da=ja.movementX;ja=ja.movementY;if(ja<0&&va>ca.current.y||ja>0&&va<ca.current.y)ca.current=
 {x:ca.current.x,y:va};if(Da<0&&ya>ca.current.x||Da>0&&ya<ca.current.x)ca.current={x:ya,y:ca.current.y};Da=ya-V.current.x;ja=va-V.current.y;va-=ca.current.y;ya-=ca.current.x;if(!C&&Math.sqrt(Da*Da+ja*ja)>=1&&(F(!0),Z===null)){let La=p.includes("left")||p.includes("right"),Ua=p.includes("up")||p.includes("down");La&&Ua&&T(Math.abs(Da)>Math.abs(ja)?"horizontal":"vertical")}if(Y.current){var Ca=Y.current;ya=QG(Ca,ya,va);ya>40?(da.current=!1,w(Ca)):!(p.includes("left")&&p.includes("right")||p.includes("up")&&
 p.includes("down"))&&fa.current-ya>=10&&(da.current=!0)}else Z==="vertical"?ja>0?Ca="down":ja<0&&(Ca="up"):Z==="horizontal"?Da>0?Ca="right":Da<0&&(Ca="left"):Ca=Math.abs(Da)>=Math.abs(ja)?Da>0?"right":"left":ja>0?"down":"up",Ca&&p.includes(Ca)&&(Y.current=Ca,fa.current=QG(Ca,Da,ja),w(Ca));ya=Da;Ca=ja;p.includes("left")||p.includes("right")?(!p.includes("right")&&Da>0&&(ya=Da**.5),!p.includes("left")&&Da<0&&(ya=-(Math.abs(Da)**.5))):ya=Da>0?Da**.5:-(Math.abs(Da)**.5);p.includes("up")||p.includes("down")?

@@ -319,4 +319,169 @@ public final class AndroidBridge {
         } catch (Throwable ignored) {
         }
     }
+
+    // =========================================================================
+    // BACKUP & RESTORE
+    // =========================================================================
+
+    @JavascriptInterface
+    public void backupConversationsAuth(String authToken) {
+        if (!isAuthorized(authToken)) return;
+        backupConversations();
+    }
+
+    @JavascriptInterface
+    public void backupConversations() {
+        final MainActivity act = MainActivity.activeActivity;
+        if (act != null) {
+            act.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    act.launchBackupConversationsPicker();
+                }
+            });
+        }
+    }
+
+    @JavascriptInterface
+    public void restoreConversationsAuth(String authToken) {
+        if (!isAuthorized(authToken)) return;
+        restoreConversations();
+    }
+
+    @JavascriptInterface
+    public void restoreConversations() {
+        final MainActivity act = MainActivity.activeActivity;
+        if (act != null) {
+            act.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    act.launchRestoreConversationsPicker();
+                }
+            });
+        }
+    }
+
+    @JavascriptInterface
+    public void backupProjectsAuth(String authToken, final String projectName) {
+        if (!isAuthorized(authToken)) return;
+        backupProjects(projectName);
+    }
+
+    @JavascriptInterface
+    public void backupProjects(final String projectName) {
+        final MainActivity act = MainActivity.activeActivity;
+        if (act != null) {
+            act.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    act.launchBackupProjectsPicker(projectName);
+                }
+            });
+        }
+    }
+
+    @JavascriptInterface
+    public void restoreProjectsAuth(String authToken, final String targetName) {
+        if (!isAuthorized(authToken)) return;
+        restoreProjects(targetName);
+    }
+
+    @JavascriptInterface
+    public void restoreProjects(final String targetName) {
+        final MainActivity act = MainActivity.activeActivity;
+        if (act != null) {
+            act.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    act.launchRestoreProjectsPicker(targetName);
+                }
+            });
+        }
+    }
+
+    @JavascriptInterface
+    public String listProjects() {
+        final MainActivity act = MainActivity.activeActivity;
+        android.content.Context ctx = act != null ? act.getApplicationContext() : appContext;
+        return com.agy.util.BackupRestoreHelper.listProjectsJson(ctx);
+    }
+
+    @JavascriptInterface
+    public void backupSkillsAuth(String authToken, final String skillName) {
+        if (!isAuthorized(authToken)) return;
+        backupSkills(skillName);
+    }
+
+    @JavascriptInterface
+    public void backupSkills(final String skillName) {
+        final MainActivity act = MainActivity.activeActivity;
+        if (act != null) {
+            act.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    act.launchBackupSkillsPicker(skillName);
+                }
+            });
+        }
+    }
+
+    @JavascriptInterface
+    public void restoreSkillsAuth(String authToken, final String targetName) {
+        if (!isAuthorized(authToken)) return;
+        restoreSkills(targetName);
+    }
+
+    @JavascriptInterface
+    public void restoreSkills(final String targetName) {
+        final MainActivity act = MainActivity.activeActivity;
+        if (act != null) {
+            act.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    act.launchRestoreSkillsPicker(targetName);
+                }
+            });
+        }
+    }
+
+    @JavascriptInterface
+    public String listSkills() {
+        final MainActivity act = MainActivity.activeActivity;
+        android.content.Context ctx = act != null ? act.getApplicationContext() : appContext;
+        return com.agy.util.BackupRestoreHelper.listSkillsJson(ctx);
+    }
+
+    @JavascriptInterface
+    public String listConversations() {
+        final MainActivity act = MainActivity.activeActivity;
+        android.content.Context ctx = act != null ? act.getApplicationContext() : appContext;
+        return com.agy.util.BackupRestoreHelper.listConversationsJson(ctx);
+    }
+
+    @JavascriptInterface
+    public void restartAppAuth(String authToken) {
+        if (!isAuthorized(authToken)) return;
+        restartApp();
+    }
+
+    @JavascriptInterface
+    public void restartApp() {
+        final MainActivity act = MainActivity.activeActivity;
+        if (act != null) {
+            act.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        android.content.Intent intent = act.getPackageManager().getLaunchIntentForPackage(act.getPackageName());
+                        if (intent != null) {
+                            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            act.startActivity(intent);
+                            Runtime.getRuntime().exit(0);
+                        }
+                    } catch (Throwable ignored) {}
+                }
+            });
+        }
+    }
 }
