@@ -30,6 +30,8 @@ import java.security.SecureRandom;
  */
 public final class AndroidBridge {
 
+    private static final String TAG = "AndroidBridge";
+
     private final UiBridge ui = new UiBridge();
     private final ThemeBridge themeBridge;
     private final EngineBridge engine;
@@ -122,6 +124,90 @@ public final class AndroidBridge {
         if (ctx != null) {
             com.agy.gateway.handlers.NotificationHandler.cancel(ctx, tag, id);
         }
+    }
+
+    @JavascriptInterface
+    public String getClipboardText() {
+        final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
+        final Context ctx = act != null ? act.getApplicationContext() : null;
+        if (ctx == null) return "";
+        try {
+            final java.util.concurrent.atomic.AtomicReference<String> textRef = new java.util.concurrent.atomic.AtomicReference<>("");
+            final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        android.content.ClipboardManager cm = (android.content.ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+                        if (cm != null && cm.hasPrimaryClip()) {
+                            android.content.ClipData clip = cm.getPrimaryClip();
+                            if (clip != null && clip.getItemCount() > 0) {
+                                CharSequence text = clip.getItemAt(0).coerceToText(ctx);
+                                if (text != null) {
+                                    textRef.set(text.toString());
+                                }
+                            }
+                        }
+                    } catch (Throwable ignored) {
+                    } finally {
+                        latch.countDown();
+                    }
+                }
+            });
+            latch.await(1000, java.util.concurrent.TimeUnit.MILLISECONDS);
+            return textRef.get();
+        } catch (Throwable e) {
+            return "";
+        }
+    }
+
+    @JavascriptInterface
+    public boolean deleteProjectFolder(String path) {
+        if (path == null || path.trim().isEmpty()) return false;
+        try {
+            if (path.startsWith("file://")) {
+                path = android.net.Uri.parse(path).getPath();
+            }
+            java.io.File dir = new java.io.File(path);
+            if (!dir.exists() || !dir.isDirectory()) return false;
+            String abs = dir.getAbsolutePath();
+            if (abs.equals("/") || abs.equals("/storage/emulated/0") || abs.equals("/storage/emulated/0/Documents")
+                    || abs.equals("/data") || abs.contains("/data/user/0/com.agy")) {
+                return false;
+            }
+            return deleteRecursively(dir);
+        } catch (Throwable e) {
+            Log.w(TAG, "deleteProjectFolder failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @JavascriptInterface
+    public String createProjectFolder(String name) {
+        if (name == null || name.trim().isEmpty()) return null;
+        try {
+            String safeName = name.trim().replaceAll("[^a-zA-Z0-9_.-]", "_");
+            java.io.File docsDir = new java.io.File("/storage/emulated/0/Documents");
+            if (!docsDir.exists()) docsDir.mkdirs();
+            java.io.File projDir = new java.io.File(docsDir, safeName);
+            if (!projDir.exists()) projDir.mkdirs();
+            return projDir.getAbsolutePath();
+        } catch (Throwable e) {
+            Log.w(TAG, "createProjectFolder failed: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private static boolean deleteRecursively(java.io.File file) {
+        if (file.isDirectory()) {
+            java.io.File[] children = file.listFiles();
+            if (children != null) {
+                for (java.io.File child : children) {
+                    deleteRecursively(child);
+                }
+            }
+        }
+        return file.delete();
     }
 
     @JavascriptInterface

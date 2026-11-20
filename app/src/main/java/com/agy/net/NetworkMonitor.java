@@ -52,6 +52,7 @@ public final class NetworkMonitor {
                 @Override
                 public void onAvailable(Network network) {
                     notifyChanged();
+                    notifyOnline();
                 }
 
                 @Override
@@ -62,6 +63,7 @@ public final class NetworkMonitor {
                 @Override
                 public void onLinkPropertiesChanged(Network network, LinkProperties linkProperties) {
                     notifyChanged();
+                    notifyOnline();
                 }
             };
             cm.registerDefaultNetworkCallback(cb);
@@ -100,5 +102,13 @@ public final class NetworkMonitor {
         } catch (Exception e) {
             Log.w(TAG, "network change listener failed", e);
         }
+    }
+
+    private void notifyOnline() {
+        try {
+            if (com.agy.ui.MainActivity.activeActivity != null) {
+                com.agy.ui.MainActivity.activeActivity.notifyNetworkOnline();
+            }
+        } catch (Throwable ignored) {}
     }
 }

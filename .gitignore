@@ -33,3 +33,4 @@ standalone_runtime/
 *~
 .idea/
 .vscode/
+graphify-out/

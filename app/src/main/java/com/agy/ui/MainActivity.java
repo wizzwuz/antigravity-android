@@ -254,6 +254,21 @@ public class MainActivity extends Activity
         }
     }
 
+    public void notifyNetworkOnline() {
+        if (webViewHost != null && webViewHost.getWebView() != null) {
+            webViewHost.getWebView().post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        webViewHost.getWebView().evaluateJavascript(
+                                "(function(){ try { window.dispatchEvent(new CustomEvent('agy:network-online')); } catch(e){} })();",
+                                null);
+                    } catch (Throwable ignored) {}
+                }
+            });
+        }
+    }
+
     public boolean isDesktopMode() {
         return webViewHost != null ? webViewHost.isDesktopMode() : DesktopModePrefs.isDesktopMode(this);
     }

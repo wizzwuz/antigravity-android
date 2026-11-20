@@ -53,10 +53,11 @@ public final class NotificationHandler {
                     NotificationManager.IMPORTANCE_DEFAULT);
             openChat.setDescription("Completion in the open chat: notification shade without a heads-up banner");
             openChat.setShowBadge(true);
+            openChat.setSound(null, null);
             openChat.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             manager.createNotificationChannel(openChat);
 
-            // 2. Agent completed: Agent finished or needs attention (floating heads-up banner support)
+            // 2. Agent completed: Agent finished or needs attention (floating heads-up banner support, silent)
             NotificationChannel completed = new NotificationChannel(
                     CHANNEL_AGENT_COMPLETED,
                     "Agent completed",
@@ -64,7 +65,8 @@ public final class NotificationHandler {
             completed.setDescription("Agent finished or needs attention");
             completed.enableLights(true);
             completed.enableVibration(true);
-            completed.setVibrationPattern(new long[]{0, 250, 100, 250});
+            completed.setVibrationPattern(new long[]{0, 200});
+            completed.setSound(null, null);
             completed.setShowBadge(true);
             completed.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             manager.createNotificationChannel(completed);
@@ -76,6 +78,7 @@ public final class NotificationHandler {
                     NotificationManager.IMPORTANCE_LOW);
             progress.setDescription("Silent progress for Antigravity tasks");
             progress.setShowBadge(false);
+            progress.setSound(null, null);
             progress.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             manager.createNotificationChannel(progress);
 
@@ -83,11 +86,13 @@ public final class NotificationHandler {
             NotificationChannel tasks = new NotificationChannel(
                     CHANNEL_TASKS, "Antigravity Tasks", NotificationManager.IMPORTANCE_LOW);
             tasks.setDescription("Notifications for ongoing AI agent and environment tasks");
+            tasks.setSound(null, null);
             manager.createNotificationChannel(tasks);
 
             NotificationChannel alerts = new NotificationChannel(
                     CHANNEL_ALERTS, "Antigravity Alerts", NotificationManager.IMPORTANCE_HIGH);
             alerts.setDescription("High-priority alerts and task completions");
+            alerts.setSound(null, null);
             manager.createNotificationChannel(alerts);
         }
     }
@@ -168,23 +173,26 @@ public final class NotificationHandler {
         }
         PendingIntent pi = PendingIntent.getActivity(context, actualId, intent, pendingFlags);
         builder.setContentIntent(pi);
+        builder.setSound(null);
 
-        // Configure floating notification support / priority
+        // Configure floating notification support / priority (silent: zero notification sound)
         if (CHANNEL_AGENT_COMPLETED.equals(channel)) {
             builder.setPriority(Notification.PRIORITY_MAX);
-            builder.setDefaults(Notification.DEFAULT_ALL);
+            builder.setDefaults(0);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 builder.setCategory(Notification.CATEGORY_EVENT);
-                builder.setVibrate(new long[]{0, 250, 100, 250});
+                builder.setVibrate(new long[]{0, 200});
             }
         } else if (CHANNEL_AGENT_PROGRESS.equals(channel)) {
             builder.setPriority(Notification.PRIORITY_LOW);
+            builder.setDefaults(0);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 builder.setCategory(Notification.CATEGORY_PROGRESS);
             }
         } else {
             // CHANNEL_AGENT_COMPLETED_OPEN_CHAT: notification shade without a heads-up banner
             builder.setPriority(Notification.PRIORITY_DEFAULT);
+            builder.setDefaults(0);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 builder.setCategory(Notification.CATEGORY_STATUS);
             }

@@ -5,6 +5,13 @@ web/patch_main.py - Dynamic patcher for web/main.js.
 1. Locates the Appearance settings block and injects the Desktop Mode toggle.
 2. Injects a conversation search button immediately to the left of the three-dot
    menu in project conversations/header, enabling search across the entire conversation.
+3. Enhanced multi-conversation background notifications and cancellation suppression.
+4. Auto-retry on network reconnection.
+5. Notification sound elimination.
+6. Persistent conversation renaming across restores and stream updates.
+7. Full un-truncated clipboard pasting.
+8. Proper project storage directory (/storage/emulated/0/Documents) and disk deletion.
+9. Global sidebar provider hooks for touch gestures.
 Safe, idempotent, and resilient to upstream changes.
 """
 
@@ -18,14 +25,11 @@ def patch_desktop_mode(content):
         print("[web-patch] Desktop Mode toggle already present in main.js")
         return content, True
 
-    # 1. State hook injection pattern in Appearance component:
-    # Matches: var C=g!==3,D=g!==2,E=F=>G=>{F===t&&v(G)}; or legacy var B=f!==3,C=f!==2,D=E=>G=>{E===r&&u(G)};
     hook_pattern = re.compile(
         r'(var\s+[A-Za-z0-9_$]+=[A-Za-z0-9_$]+!==3,\s*[A-Za-z0-9_$]+=[A-Za-z0-9_$]+!==2,\s*[A-Za-z0-9_$]+=[A-Za-z0-9_$]+=>\s*[A-Za-z0-9_$]+=>\{.*?\};)'
     )
     hook_match = hook_pattern.search(content)
 
-    # 2. JSX Theme element injection: find Theme element in Appearance
     theme_idx = content.find('{label:"Theme"')
     theme_match = None
     react_id = "A"
@@ -55,7 +59,6 @@ def patch_desktop_mode(content):
         + orig_hook
     )
 
-    # Detect switch and setting item components
     item_comp = "v3"
     switch_comp = "dX"
     re_idx = content.find('rightElement:')
@@ -240,20 +243,17 @@ def patch_search_toggles(content):
 
 
 def patch_main_screen_universal_search(content):
-    # 1. Enable conversationSearchV2 feature flag in config
     cs_flag = 'conversationSearchV2:{feature:!1'
     if cs_flag in content:
         content = content.replace(cs_flag, 'conversationSearchV2:{feature:!0', 1)
         print("[web-patch] Enabled conversationSearchV2 feature flag in main.js")
 
-    # 2. Patch PBb to ensure unified search is always enabled when conversationSearchV2 is active
     pbb_target = 'f=!(!e.get("codeSearchPalette")?.enabled||c===void 0),g=!(!f||!e.get("conversationSearchV2"))'
     pbb_injected = 'f=!(!e.get("codeSearchPalette")?.enabled||c===void 0),g=!0'
     if pbb_target in content:
         content = content.replace(pbb_target, pbb_injected, 1)
         print("[web-patch] Enabled showUnifiedSearch in PBb component")
 
-    # 3. Inject mainCmd and window.__agyOpenConversation into fRb header
     frb_target = 'function fRb(){var a=Lj(),b=ER(),'
     frb_injected = (
         'function fRb(){'
@@ -277,7 +277,6 @@ def patch_main_screen_universal_search(content):
         print("[web-patch] Main screen universal search button already present in main.js")
         return content, True
 
-    # 4. Locate mobile-open-settings in fRb
     idx = content.find("mobile-open-settings")
     if idx == -1:
         print("[web-patch] mobile-open-settings target not found in main.js", file=sys.stderr)
@@ -296,9 +295,9 @@ def patch_main_screen_universal_search(content):
         return content, False
 
     orig_elem = m.group(0)
-    b_var = m.group(1)      # isHome variable
-    react_id = m.group(3)   # React identifier
-    btn_comp = m.group(4)   # IconButton component
+    b_var = m.group(1)
+    react_id = m.group(3)
+    btn_comp = m.group(4)
 
     search_btn = (
         f'{b_var}&&{react_id}.createElement({btn_comp},{{iconName:"search",'
@@ -316,6 +315,39 @@ def patch_main_screen_universal_search(content):
     return content, True
 
 
+def patch_remove_sound(content):
+    sqc_target = "async function sqc(a,b){var c=d,e=d;try{if(a&&M9(b)){"
+    sqc_injected = "async function sqc(a,b){return;var c=d,e=d;try{if(a&&M9(b)){"
+    if sqc_target in content:
+        content = content.replace(sqc_target, sqc_injected, 1)
+        print("[web-patch] Disabled agent sound player sqc")
+
+    sound_target = '{cascadeDone:"/antigravityCascadeDone.mp3",actionRequired:"/antigravityActionRequired.mp3"}'
+    sound_injected = '{cascadeDone:"",actionRequired:""}'
+    if sound_target in content:
+        content = content.replace(sound_target, sound_injected, 1)
+        print("[web-patch] Stripped notification sound files")
+
+    return content, True
+
+
+def patch_cancel_stop_hook(content):
+    us_target = 'if(N("cancel_message_stream"),\nf)'
+    us_injected = (
+        'if((function(){try{if(typeof window!=="undefined"){'
+        'if(!window.__agyCancelledRuns)window.__agyCancelledRuns=new Set();'
+        'if(f){'
+        'window.__agyCancelledRuns.add(f);'
+        'if(window.Android&&typeof window.Android.cancelNotification==="function")window.Android.cancelNotification("cascade_prog_"+f,0);'
+        '}'
+        '}}catch(_){}})()||!0,N("cancel_message_stream"),\nf)'
+    )
+    if us_target in content:
+        content = content.replace(us_target, us_injected, 1)
+        print("[web-patch] Patched cancel_message_stream to track user task cancellation")
+    return content, True
+
+
 def patch_agent_notifications(content):
     if "cascade_prog_" in content:
         print("[web-patch] Agent notifications already patched in main.js")
@@ -328,6 +360,7 @@ def patch_agent_notifications(content):
         '(function(pld){try{'
         'if(typeof window!=="undefined"&&window.Android&&pld){'
         'if(!window.__agyActiveRuns)window.__agyActiveRuns=new Set();'
+        'if(!window.__agyCancelledRuns)window.__agyCancelledRuns=new Set();'
         'if(Array.isArray(pld.updates)){'
         'for(let [cid,s] of pld.updates){'
         'if(!cid||!s)continue;'
@@ -340,6 +373,10 @@ def patch_agent_notifications(content):
         '}else if(window.__agyActiveRuns.has(cid)){'
         'window.__agyActiveRuns.delete(cid);'
         'window.Android.cancelNotification("cascade_prog_"+cid,0);'
+        'var isCancelled=(s.latestExecutorTerminationReason===2||s.latestExecutorTerminationReason===1||window.__agyCancelledRuns.has(cid));'
+        'if(isCancelled){'
+        'window.__agyCancelledRuns.delete(cid);'
+        '}else{'
         'var ct=s.summary||s.title||"Agent completed";'
         'var cb=s.preview||"Agent finished the task";'
         'window.Android.postNotification("agent_completed",ct,cb,cid,false,-1);'
@@ -352,6 +389,7 @@ def patch_agent_notifications(content):
         'window.__agyActiveRuns.delete(cid);'
         'window.Android.cancelNotification("cascade_prog_"+cid,0);'
         '}'
+        'if(window.__agyCancelledRuns)window.__agyCancelledRuns.delete(cid);'
         '}'
         '}'
         '}'
@@ -377,10 +415,16 @@ def patch_agent_notifications(content):
         '):('
         'a.delete(b)&&('
         '(function(){try{if(typeof window!=="undefined"&&window.Android){'
+        'if(!window.__agyCancelledRuns)window.__agyCancelledRuns=new Set();'
         'window.Android.cancelNotification("cascade_prog_"+b,0);'
+        'var isCancelled=(h.latestExecutorTerminationReason===2||h.latestExecutorTerminationReason===1||window.__agyCancelledRuns.has(b));'
+        'if(isCancelled){'
+        'window.__agyCancelledRuns.delete(b);'
+        '}else{'
         'var ct=h.summary||h.title||"Agent completed";'
         'var cb=h.preview||"Agent finished the task";'
         'window.Android.postNotification("agent_completed",ct,cb,b,false,-1);'
+        '}'
         '}}catch(_){}})(),'
         '(h.trajectoryMetadata?.parentConversationId||e.push([b,h]))'
         ')'
@@ -397,12 +441,12 @@ def patch_agent_notifications(content):
         '(function(){try{if(typeof window!=="undefined"&&window.Android&&typeof window.Android.postNotification==="function"){'
         'window.Android.postNotification("agent_completed",r.title||"Action requires attention",r.body||"The agent needs your input.",r.payload?.cascadeId||"",false,-1);'
         '}}catch(_){}})(),'
-        'f.actionRequired&&g?.({soundFile:f.actionRequired}),c?.(r)'
+        'c?.(r)'
         ')'
     )
     if kda_act_target in content:
         content = content.replace(kda_act_target, kda_act_injected, 1)
-        print("[web-patch] Patched KDa with agent action/question notification")
+        print("[web-patch] Patched KDa with agent action/question notification (silent)")
 
     # 4. Patch KDa for cascadeDone completion dispatch
     kda_fin_target = 'c?.({id:`agent-finished-${l}-${Date.now()}`,title:e,body:q.summary||"Agent finished",payload:{cascadeId:l,type:"request_action",workspaceUri:void 0}})'
@@ -410,7 +454,11 @@ def patch_agent_notifications(content):
         '('
         '(function(){try{if(typeof window!=="undefined"&&window.Android&&typeof window.Android.postNotification==="function"){'
         'window.Android.cancelNotification("cascade_prog_"+l,0);'
+        'if(window.__agyCancelledRuns&&window.__agyCancelledRuns.has(l)){'
+        'window.__agyCancelledRuns.delete(l);'
+        '}else{'
         'window.Android.postNotification("agent_completed",q.summary||"Agent completed",q.preview||"Agent finished task",l,false,-1);'
+        '}'
         '}}catch(_){}})(),'
         'c?.({id:`agent-finished-${l}-${Date.now()}`,title:e,body:q.summary||"Agent finished",payload:{cascadeId:l,type:"request_action",workspaceUri:void 0}})'
         ')'
@@ -422,12 +470,171 @@ def patch_agent_notifications(content):
     return content, True
 
 
+def patch_auto_retry_on_internet(content):
+    v_target = 'var v=w=>({label:w,onClick:()=>{t({type:7,cascadeId:u})}});'
+    v_injected = (
+        'var v=w=>{'
+        'try{if(typeof window!=="undefined")window.__agyPendingRetry=()=>{try{t({type:7,cascadeId:u})}catch(_){}};}catch(_){}'
+        'return {label:w,onClick:()=>{try{if(window.__agyPendingRetry)window.__agyPendingRetry=null;}catch(_){}t({type:7,cascadeId:u})}};'
+        '};'
+    )
+    if v_target in content:
+        content = content.replace(v_target, v_injected, 1)
+        print("[web-patch] Hooked model retry builder with auto-retry state")
+
+    net_hook = '/* AGY AutoRetry Hook */'
+    if net_hook not in content:
+        listener = (
+            ';/* AGY AutoRetry Hook */(function(){try{if(typeof window!=="undefined"&&!window.__agyAutoRetryInstalled){'
+            'window.__agyAutoRetryInstalled=!0;'
+            'var triggerRetry=function(){'
+            'setTimeout(function(){'
+            'if(typeof window.__agyPendingRetry==="function"){'
+            'try{console.log("[AGY AutoRetry] Internet reconnected, auto-retrying...");window.__agyPendingRetry();window.__agyPendingRetry=null;return;}catch(_){}'
+            '}'
+            'try{'
+            'var btns=document.querySelectorAll("button");'
+            'for(var i=0;i<btns.length;i++){'
+            'var txt=(btns[i].textContent||"").trim();'
+            'if(txt==="Retry"||txt==="Try again"){'
+            'console.log("[AGY AutoRetry] Clicking button on network restore:",txt);'
+            'btns[i].click();break;'
+            '}'
+            '}'
+            '}catch(_){}'
+            '},500);'
+            '};'
+            'window.addEventListener("online",triggerRetry);'
+            'window.addEventListener("agy:network-online",triggerRetry);'
+            '}}catch(_){}})();'
+        )
+        content = content + listener
+        print("[web-patch] Injected automatic network retry listeners")
+    return content, True
+
+
+def patch_conversation_rename_persistence(content):
+    # 1. Preserve custom title in ona
+    ona_target = 'function ona(a,b,c,e){c.summary||(a=e==="local"?a.summaries[b]:a.externalSummaries?.[b],a?.summary&&(c.summary=a.summary))}'
+    ona_injected = (
+        'function ona(a,b,c,e){'
+        'var prev=e==="local"?a.summaries[b]:a.externalSummaries?.[b];'
+        'if(prev){'
+        'if(!c.summary&&prev.summary)c.summary=prev.summary;'
+        'if(prev.annotations?.title){'
+        'if(!c.annotations)c.annotations=p(te.ConversationAnnotationsSchema,{});'
+        'if(!c.annotations.title)c.annotations.title=prev.annotations.title;'
+        '}'
+        '}'
+        '}'
+    )
+    if ona_target in content:
+        content = content.replace(ona_target, ona_injected, 1)
+        print("[web-patch] Patched ona to preserve custom conversation title")
+
+    # 2. Support title in pna
+    pna_target = 'function pna(a,b){a.annotations||(a.annotations=p(te.ConversationAnnotationsSchema,{}));a=a.annotations;b.archived!==void 0&&(a.archived=b.archived);'
+    pna_injected = 'function pna(a,b){a.annotations||(a.annotations=p(te.ConversationAnnotationsSchema,{}));a=a.annotations;b.title!==void 0&&(a.title=b.title);b.archived!==void 0&&(a.archived=b.archived);'
+    if pna_target in content:
+        content = content.replace(pna_target, pna_injected, 1)
+        print("[web-patch] Patched pna to support annotations.title")
+
+    # 3. Read title from persistent store in bNa
+    bna_target = 'bNa=(a,b)=>{if(b)return a=(a.trajectorySummaries?.summaries??tm.summaries)[b],a?.annotations?.title?.trim()||\na?.summary?.trim()||void 0};'
+    bna_injected = (
+        'bNa=(a,b)=>{'
+        'if(!b)return void 0;'
+        'try{'
+        'var saved=typeof localStorage!=="undefined"?localStorage.getItem("agy_title_"+b):null;'
+        'if(saved&&saved.trim())return saved.trim();'
+        '}catch(_){}'
+        'a=(a.trajectorySummaries?.summaries??tm.summaries)[b];'
+        'var custom=a?.annotations?.title?.trim();'
+        'if(custom){try{localStorage.setItem("agy_title_"+b,custom);}catch(_){}return custom;}'
+        'return a?.summary?.trim()||void 0'
+        '};'
+    )
+    if bna_target in content:
+        content = content.replace(bna_target, bna_injected, 1)
+        print("[web-patch] Patched bNa to read persistent renamed title")
+
+    # 4. Save title to persistent store in handleRename
+    rename_target = 'q({type:"updateOptimisticSummary",cascadeId:a,optimisticSummaryText:ma});try{pa(await ja(f(a,p(te.ConversationAnnotationsSchema,{title:ma}),!0)))'
+    rename_injected = (
+        'try{if(typeof localStorage!=="undefined")localStorage.setItem("agy_title_"+a,ma);}catch(_){}'
+        'q({type:"updateOptimisticSummary",cascadeId:a,optimisticSummaryText:ma});try{pa(await ja(f(a,p(te.ConversationAnnotationsSchema,{title:ma}),!0)))'
+    )
+    if rename_target in content:
+        content = content.replace(rename_target, rename_injected, 1)
+        print("[web-patch] Patched handleRename to persistently save conversation title")
+
+    return content, True
+
+
+def patch_clipboard_paste_full(content):
+    r8a_target = 'function r8a(a,b,c){var e=b.getData("text/plain");for(let f of q8a(a)){let g=b.getData(f);if(g&&(f!=="text/html"||g!==e)&&p8a(a.$importMimeType[f],g,c,b))return!0}return!1}'
+    r8a_injected = (
+        'function r8a(a,b,c){'
+        'var e=b.getData("text/plain");'
+        'if((!e||e.trim()==="")&&typeof window!=="undefined"&&window.Android&&typeof window.Android.getClipboardText==="function"){'
+        'try{e=window.Android.getClipboardText()||e;}catch(_){}'
+        '}'
+        'if(e&&e.length>0&&a.$importMimeType["text/plain"]){'
+        'if(p8a(a.$importMimeType["text/plain"],e,c,b))return!0;'
+        '}'
+        'for(let f of q8a(a)){'
+        'let g=b.getData(f);'
+        'if(g&&(f!=="text/html"||g!==e)&&p8a(a.$importMimeType[f],g,c,b))return!0;'
+        '}'
+        'return!1;'
+        '}'
+    )
+    if r8a_target in content:
+        content = content.replace(r8a_target, r8a_injected, 1)
+        print("[web-patch] Patched r8a to guarantee full clipboard text paste without truncation")
+    return content, True
+
+
+def patch_projects_storage_path(content):
+    init_path_target = 'initialPath:b?b.fsPath:ch?"C:/":"/"'
+    init_path_injected = 'initialPath:"/storage/emulated/0/Documents"'
+    if init_path_target in content:
+        content = content.replace(init_path_target, init_path_injected, 1)
+        print("[web-patch] Changed default projects directory to /storage/emulated/0/Documents")
+
+    del_target = 'this.deleteProject=async e=>{var f=d,g=d;try{g(await f(this.lsClient.deleteProject({id:e})))}finally{f()}};'
+    del_injected = (
+        'this.deleteProject=async e=>{var f=d,g=d;try{'
+        'try{'
+        'var pr=this.richProjectsProvider?.getState()?.get(e)?.project;'
+        'var wUri=pr?.workspaces?.[0]?.workspaceFolderAbsoluteUri||pr?.workspaceFolderUri;'
+        'if(wUri&&typeof window!=="undefined"&&window.Android&&typeof window.Android.deleteProjectFolder==="function"){'
+        'window.Android.deleteProjectFolder(wUri);'
+        '}'
+        '}catch(_){}'
+        'g(await f(this.lsClient.deleteProject({id:e})))'
+        '}finally{f()}};'
+    )
+    if del_target in content:
+        content = content.replace(del_target, del_injected, 1)
+        print("[web-patch] Patched deleteProject to delete project directory from storage")
+    return content, True
+
+
+def patch_capture_providers(content):
+    zj_target = 'function Zj(){var {sidebarSectionsProvider:a}=Xj();return a}'
+    zj_injected = 'function Zj(){var {sidebarSectionsProvider:a}=Xj();try{if(typeof window!=="undefined")window.__agySidebarProvider=a;}catch(_){}return a}'
+    if zj_target in content:
+        content = content.replace(zj_target, zj_injected, 1)
+        print("[web-patch] Exposed sidebarSectionsProvider on window.__agySidebarProvider")
+    return content, True
+
+
 def patch_full_text_conversation_search(content):
     if "natStr=window.Android.searchConversations" in content:
         print("[web-patch] Full text conversation search already present in main.js")
         return content, True
 
-    # 1. Patch cBb to query native full-text transcript search from Android bridge
     cbb_target = 'let J=H(await G(c({query:b,limit:50,signal:D.signal})));'
     cbb_injected = (
         'let J;'
@@ -453,21 +660,18 @@ def patch_full_text_conversation_search(content):
         print("[web-patch] cBb target not found in main.js", file=sys.stderr)
         return content, False
 
-    # 2. Patch nBb to always enable full-text conversation search v2 on Android
     nbb_flag_target = '],[q]),u=Lj().get("conversationSearchV2")??!1,'
     nbb_flag_injected = '],[q]),u=!0,'
     if nbb_flag_target in content:
         content = content.replace(nbb_flag_target, nbb_flag_injected, 1)
         print("[web-patch] Successfully enabled conversationSearchV2 in nBb")
 
-    # 3. Patch nBb result fallback to keep title-based results if transcript search returned no matches
     nbb_res_target = 'B?v.length===0?[]:[{id:"Results",preScored:!0,items:v.map(aBb)}]:t:r'
     nbb_res_injected = 'B?v.length===0?r:[{id:"Results",preScored:!0,items:v.map(aBb)}]:t:r'
     if nbb_res_target in content:
         content = content.replace(nbb_res_target, nbb_res_injected, 1)
         print("[web-patch] Successfully patched nBb results with fallback")
 
-    # 4. Patch kBb in unified search to prioritize Conversations section when results are matched
     kbb_target = 'h=f==="Code Search"?fL(`${k} ${l}`,b)?c?2:1:0:fL(k,b)?2:fL(l,b)?1:0'
     kbb_injected = 'h=f==="Conversations"&&g.length>0?2:(f==="Code Search"?fL(`${k} ${l}`,b)?c?2:1:0:fL(k,b)?2:fL(l,b)?1:0)'
     if kbb_target in content:
@@ -505,8 +709,36 @@ def patch_main(file_path):
     if not ok_universal:
         return False
 
+    content, ok_sound = patch_remove_sound(content)
+    if not ok_sound:
+        return False
+
+    content, ok_cancel_hook = patch_cancel_stop_hook(content)
+    if not ok_cancel_hook:
+        return False
+
     content, ok_notif = patch_agent_notifications(content)
     if not ok_notif:
+        return False
+
+    content, ok_retry = patch_auto_retry_on_internet(content)
+    if not ok_retry:
+        return False
+
+    content, ok_rename = patch_conversation_rename_persistence(content)
+    if not ok_rename:
+        return False
+
+    content, ok_clip = patch_clipboard_paste_full(content)
+    if not ok_clip:
+        return False
+
+    content, ok_proj = patch_projects_storage_path(content)
+    if not ok_proj:
+        return False
+
+    content, ok_prov = patch_capture_providers(content)
+    if not ok_prov:
         return False
 
     content, ok_fts = patch_full_text_conversation_search(content)

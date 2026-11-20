@@ -27,14 +27,15 @@ public final class WebViewLifecycle {
         }
     }
 
-    /** Pauses page callbacks and timers while the host activity is not visible. */
+    /** Pauses page callbacks while host activity is not visible. Timers remain unpaused so background agent tasks/notifications continue running without delay. */
     public static void pause(WebView webView) {
         if (webView == null) {
             return;
         }
         try {
             webView.onPause();
-            webView.pauseTimers();
+            // Do not call webView.pauseTimers(): pauseTimers freezes all JavaScript execution
+            // globally across the process, causing background task completion alerts to delay.
         } catch (Exception e) {
             Log.w(TAG, "failed to pause webView", e);
         }
