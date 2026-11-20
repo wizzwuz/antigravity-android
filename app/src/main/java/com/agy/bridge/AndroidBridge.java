@@ -72,6 +72,93 @@ public final class AndroidBridge {
     }
 
     @JavascriptInterface
+    public void backupConversations(final String conversationScope) {
+        final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
+        if (act != null) {
+            act.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    act.launchBackupConversationsPicker(conversationScope);
+                }
+            });
+        }
+    }
+
+    @JavascriptInterface
+    public void backupConversations() {
+        backupConversations(null);
+    }
+
+    @JavascriptInterface
+    public String listConversations() {
+        final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
+        Context ctx = act != null ? act.getApplicationContext() : null;
+        return com.agy.util.BackupRestoreHelper.listConversationsJson(ctx);
+    }
+
+    @JavascriptInterface
+    public void restoreConversations() {
+        final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
+        if (act != null) {
+            act.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    act.launchRestoreConversationsPicker();
+                }
+            });
+        }
+    }
+
+    @JavascriptInterface
+    public void backupProjects(final String projectName) {
+        final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
+        if (act != null) {
+            act.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    act.launchBackupProjectsPicker(projectName);
+                }
+            });
+        }
+    }
+
+    @JavascriptInterface
+    public void restoreProjects(final String targetName) {
+        final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
+        if (act != null) {
+            act.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    act.launchRestoreProjectsPicker(targetName);
+                }
+            });
+        }
+    }
+
+    @JavascriptInterface
+    public String listProjects() {
+        final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
+        Context ctx = act != null ? act.getApplicationContext() : null;
+        return com.agy.util.BackupRestoreHelper.listProjectsJson(ctx);
+    }
+
+    @JavascriptInterface
+    public void restartApp() {
+        final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
+        if (act != null) {
+            act.restartApp();
+        }
+    }
+
+    @JavascriptInterface
+    public void promptRestart(final String message) {
+        final MainActivity act = activityRef != null ? activityRef.get() : MainActivity.activeActivity;
+        if (act != null) {
+            act.showRestartPrompt(message);
+        }
+    }
+
+    @JavascriptInterface
     public void onUiError(String token, final String errorMessage) {
         if (matchesNativeBridgeToken(token)) {
             ui.onUiError(errorMessage);
